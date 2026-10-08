@@ -144,7 +144,7 @@
     <!-- Connect to the internet to open this building. · Guest state: offline with nothing cached. -->
     <string name="connect_to_the_internet_to_open_this_building">Conecte-se à internet para abrir este imóvel.</string>
     <!-- Continue · Camera explainer: shows the system camera prompt. -->
-    <string name="continue">Continuar</string>
+    <string name="continue_action">Continuar</string>
     <!-- Continue with email · Sign-in: email option. -->
     <string name="continue_with_email">Continuar com e-mail</string>
     <!-- Continue with Google · Sign-in: Google option. -->

@@ -24,6 +24,11 @@ RES = os.path.join(ROOT, "features", "src", "main", "res")
 LOCALES = {"en": "values", "pt-BR": "values-b+pt+BR", "es": "values-es"}
 
 INFLECT = re.compile(r"\^\[(%lld) ([^\]]+)\]\(inflect: true\)")
+# Resource names become Java fields, so they can't be keywords.
+JAVA_KEYWORDS = set("""abstract assert boolean break byte case catch char class const continue default do
+double else enum extends final finally float for goto if implements import instanceof int interface long
+native new package private protected public return short static strictfp super switch synchronized this
+throw throws transient try void volatile while true false null""".split())
 PLACEHOLDER = re.compile(r"%(@|lld|%)")
 
 # Plural forms of the inflected words in the catalog (English, Portuguese, Spanish).
@@ -46,6 +51,8 @@ def resource_name(key, used):
     name = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[:60].rstrip("_") or "string"
     if name[0].isdigit():
         name = "s_" + name
+    if name in JAVA_KEYWORDS:
+        name += "_action"
     base, n = name, 2
     while name in used:
         name = f"{base}_{n}"
