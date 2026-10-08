@@ -1218,7 +1218,7 @@ private fun FixHereCard(model: ARExperienceModel, fix: ARExperienceModel.FixHere
 private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomSave) {
     val scope = rememberCoroutineScope()
     val observation = save.observation
-    val locale = Locale.getDefault()
+    val locale = androidx.core.os.ConfigurationCompat.getLocales(androidx.compose.ui.platform.LocalConfiguration.current).get(0) ?: Locale.ROOT
     val name = model.roomName(observation.spaceID) ?: ""
     val (shift, turn) = model.change(observation)
     val status = save.status
