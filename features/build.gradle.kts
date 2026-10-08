@@ -2,6 +2,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.plugin.compose")
+    // Typed navigation routes (BuildingDestinations.kt) are @Serializable classes.
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
