@@ -94,7 +94,10 @@ fun SectionFooter(text: String, modifier: Modifier = Modifier) {
 
 /**
  * A list row on the surface colour; [onClick] makes it tappable, [chevron] shows it pushes a
- * screen (iOS `NavigationLink`).
+ * screen (iOS `NavigationLink`). With a chevron, [content] fills the space before it, so a child
+ * with `Modifier.weight(1f)` pushes the rest to the trailing edge (iOS `Spacer()`).
+ *
+ * @param onClickLabel what a tap does, for TalkBack (iOS `accessibilityHint`).
  */
 @Composable
 fun ListRow(
@@ -102,6 +105,7 @@ fun ListRow(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     chevron: Boolean = false,
+    onClickLabel: String? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth().background(Palette.surface)) {
@@ -109,15 +113,28 @@ fun ListRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .let { if (onClick != null) it.clickable(enabled = enabled, role = Role.Button, onClick = onClick) else it }
+                .let {
+                    if (onClick != null) {
+                        it.clickable(enabled = enabled, onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+                    } else {
+                        it
+                    }
+                }
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            content()
             if (chevron) {
-                Spacer(Modifier.weight(1f))
+                Row(
+                    Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    content()
+                }
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Palette.muted)
+            } else {
+                content()
             }
         }
         HorizontalDivider(color = Palette.line, thickness = 0.5.dp, modifier = Modifier.padding(start = 16.dp))

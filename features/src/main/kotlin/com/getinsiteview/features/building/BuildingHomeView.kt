@@ -165,7 +165,8 @@ private fun LazyListScope.content(session: BuildingSession, navigator: BuildingN
                     chevron = true,
                 ) {
                     ColorDot(session.systemColor(system.key), 12)
-                    Text(session.systemName(system.key), style = IvType.body(), color = Palette.ink)
+                    // iOS `Spacer()`: "Couldn't load" sits at the trailing edge.
+                    Text(session.systemName(system.key), style = IvType.body(), color = Palette.ink, modifier = Modifier.weight(1f))
                     if (system.key in session.failedSystems) {
                         Text(stringResource(R.string.couldn_t_load), style = IvType.body(13.sp), color = Palette.warn)
                     }

@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -185,7 +186,8 @@ private fun Preview(model: GuestFlowModel, previewID: UUID) {
                 revision = session.sceneRevision,
                 fitRequest = 0,
                 isInteractive = false,
-                modifier = Modifier.fillMaxSize(),
+                // iOS `.accessibilityHidden(true)`: a decorative preview.
+                modifier = Modifier.fillMaxSize().clearAndSetSemantics {},
             )
         } else if (thumbnail != null) {
             RemoteImage(thumbnail, Modifier.fillMaxSize()) { Box(Modifier.fillMaxSize().background(Palette.surface)) }

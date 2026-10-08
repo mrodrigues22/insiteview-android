@@ -140,6 +140,7 @@ fun DocumentRow(
     ListRow(
         onClick = open,
         enabled = item.url != null,
+        onClickLabel = stringResource(R.string.opens_the_document),
     ) {
         Icon(item.kind.icon, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(28.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -166,6 +167,8 @@ fun DocumentsView(session: BuildingSession, navigator: BuildingNavigator) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val opener = remember { DocumentOpener() }
+    // iOS `.refreshable`: the spinner stays while the list reloads.
+    var refreshing by remember { mutableStateOf(false) }
     LaunchedEffect(session) {
         if (session.documents == BuildingSession.DocumentsState.Idle) session.loadDocuments()
     }
@@ -175,8 +178,17 @@ fun DocumentsView(session: BuildingSession, navigator: BuildingNavigator) {
     ) { padding ->
         AccessGate(session, Modifier.fillMaxSize().padding(padding)) {
             PullToRefreshBox(
-                isRefreshing = false,
-                onRefresh = { scope.launch { session.loadDocuments() } },
+                isRefreshing = refreshing,
+                onRefresh = {
+                    scope.launch {
+                        refreshing = true
+                        try {
+                            session.loadDocuments()
+                        } finally {
+                            refreshing = false
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 LazyColumn(Modifier.fillMaxSize()) {

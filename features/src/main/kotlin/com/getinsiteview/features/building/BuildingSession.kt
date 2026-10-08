@@ -63,6 +63,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -417,9 +418,12 @@ class BuildingSession(
         )
         events.collect { event ->
             while (holdsSceneWork && isActive) delay(200)
-            if (!isActive) return@collect
+            // iOS returns from the load here: a cancelled load (access ended, PIN reload) handles
+            // no more events and doesn't set a final phase.
+            ensureActive()
             handle(event)
         }
+        ensureActive()
         phase = BuildingSessionRules.finalPhase(loadState.models.isEmpty(), loadState.failures.values)
     }
 
