@@ -288,7 +288,7 @@ abstract class ARAlignmentLogic(
     private var lastSample: FrameSample? = null
 
     /** The unplaced plate being registered (its image name). */
-    protected var registrationImage: String? = null
+    protected var registrationImageName: String? = null
         private set
 
     private var lastDragPoint: Vec3? = null
@@ -341,7 +341,7 @@ abstract class ARAlignmentLogic(
 
     /** The plate being registered: its image is ready ([name] `register-N`), or watching stopped (`null`). */
     protected fun setRegistrationImage(name: String?) {
-        registrationImage = name
+        registrationImageName = name
         reconfigureIfNeeded()
     }
 
@@ -368,7 +368,7 @@ abstract class ARAlignmentLogic(
     /** What the configuration depends on now. */
     val settings: ARSessionSettings
         get() = ARSessionSettings(
-            detection = detectionSet, registration = registrationImage, lean = isMarking, thermalLimited = thermalLimited,
+            detection = detectionSet, registration = registrationImageName, lean = isMarking, thermalLimited = thermalLimited,
             walls = isAiming && aimsAtWalls,
         )
 
@@ -786,6 +786,11 @@ abstract class ARAlignmentLogic(
         for (site in plan.add) {
             if (addSiteAnchor(site)) siteAnchors += site.id
         }
+    }
+
+    /** The session's anchors are gone (a new session): every site gets a new one. */
+    protected fun siteAnchorsLost() {
+        siteAnchors.clear()
     }
 
     /** Sites whose anchor couldn't be added yet (ARCore refuses anchors while not tracking). */
