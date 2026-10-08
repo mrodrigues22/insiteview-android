@@ -106,11 +106,11 @@ class ApiContractTest {
         Catalog.LocalizedNames.serializer() to "LocalizedNames",
     )
 
-    /** Open enums and the values the app names (`VisitPlatform.ANDROID_APP` is being added to the API). */
+    /** Open enums and the values the app names . */
     private val enums: Map<String, List<String>> = mapOf(
         "PublicBuildingStatus" to listOf(PublicBuildingStatus.LIVE, PublicBuildingStatus.NOT_LIVE, PublicBuildingStatus.PAUSED, PublicBuildingStatus.EXPIRED).map { it.raw },
         "VisitVia" to listOf(VisitVia.PLATE, VisitVia.LINK, VisitVia.MEMBER, VisitVia.GRANT, VisitVia.SAVED).map { it.raw },
-        "VisitPlatform" to listOf(VisitPlatform.IOS_APP, VisitPlatform.IOS_CLIP).map { it.raw },
+        "VisitPlatform" to listOf(VisitPlatform.IOS_APP, VisitPlatform.IOS_CLIP, VisitPlatform.ANDROID_APP).map { it.raw },
         "OrganizationRole" to listOf(OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.MEMBER).map { it.raw },
         "RoomCorrectionSource" to listOf(RoomCorrectionSource.ADMIN, RoomCorrectionSource.VISITORS).map { it.raw },
         "DocumentKind" to listOf(

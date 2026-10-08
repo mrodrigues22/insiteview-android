@@ -11725,9 +11725,11 @@
           "WebIos",
           "WebAndroid",
           "WebDesktop",
-          "Other"
+          "Other",
+          "AndroidApp"
         ],
-        "type": "string"
+        "type": "string",
+        "description": "Where a visit was opened. New values are only ever appended."
       },
       "VisitResponse": {
         "required": [
