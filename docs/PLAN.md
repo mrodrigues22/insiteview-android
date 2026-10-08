@@ -1,6 +1,6 @@
 # insiteview-android plan and checklist
 
-> As of 2026-10-08 · The master plan (scope, architecture, API contract, asset contract, milestones)
+> As of 2026-10-08 (every module ported; CI green; nothing run on a device yet) · The master plan (scope, architecture, API contract, asset contract, milestones)
 > is `insiteview-api/docs/PLAN.md` (M7 · Android app); § numbers without a repo refer to it. The
 > iPhone app (`insiteview-ios/docs/PLAN.md`) is the functional spec: this app does what it does,
 > screen for screen. The differences are in §6, each with its reason.
@@ -111,6 +111,12 @@ ARKit → ARCore mapping (each line is a decision; device checks in `docs/device
 | RealityKit picking (collision boxes, convex hulls) | Ray–box picking in `:scene` with `PickingShape` boxes; long diagonal runs test the mesh's triangles. |
 | `OpacityComponent` (chunk × element) | Material alpha: See inside opacity on the chunk's materials times the proximity fade per element. |
 | Camera permission (`restricted`) | Android has no restricted state; "Don't ask again" maps to `CameraDenied(canOpenSettings = true)`. |
+| `.searchable` search bars | A search field at the top of the list | Compose has no navigation-bar search |
+| Swipe a building to reveal a star | A full swipe toggles the favourite | Material's swipe-to-dismiss; the empty-state text is unchanged |
+| Object card over the 3D viewer at medium height (model still touchable) | A modal bottom sheet | Material3's sheet is modal |
+| AR as a full-screen cover | A navigation destination | Navigation Compose; the scene claim works the same |
+| ARKit is always present | An ARCore check first (install from Play, or "AR isn't available on this phone") | ARCore is a separate service on Android |
+| iPhone wording ("on any iPhone", "your iPhone") | "phone" | Android-only strings in `strings_android.xml` / `strings_app.xml` |
 | Admin AR (registration, room save) disabled in the App Clip | Always available to admins and owners (there is no Clip). |
 
 Known iOS quirks (`docs/ios-ar-reference.md` §10): Android copies the behaviour except two bugs,
@@ -164,31 +170,31 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 
 ### AND-M1 · Logic modules
 
-- [ ] **AND-M1-01** `:core` ← IVCore, with IVCoreTests ported; Install Referrer handoff parsing.
-- [ ] **AND-M1-02** `:modelkit` ← IVModelKit (manifest, chunks, cache, element index, filters, all geometry), with IVModelKitTests ported and GLB in the chunk plan.
+- [x] **AND-M1-01** `:core` ← IVCore, with IVCoreTests ported; Install Referrer handoff parsing.
+- [x] **AND-M1-02** `:modelkit` ← IVModelKit (manifest, chunks, cache, element index, filters, all geometry), with IVModelKitTests ported and GLB in the chunk plan.
 
 ### AND-M2 · API client
 
-- [ ] **AND-M2-01** `:api` ← IVAPI: models, `ApiClient`, interceptors, `ApiError`, credentials and refresh, `BuildingConnection`, PIN, analytics uploader, catalog, my buildings, search, documents, account and OAuth; IVAPITests ported; `ApiContractTest`.
+- [x] **AND-M2-01** `:api` ← IVAPI: models, `ApiClient`, interceptors, `ApiError`, credentials and refresh, `BuildingConnection`, PIN, analytics uploader, catalog, my buildings, search, documents, account and OAuth; IVAPITests ported; `ApiContractTest`.
 
 ### AND-M3 · Guest flow and 3D
 
-- [ ] **AND-M3-01** (needs device check) `:design` ← IVDesign: palette, Anton/Barlow/JetBrains Mono, buttons, chips, loading bar, detent slider, wordmark.
-- [ ] **AND-M3-02** (needs device check) `:scene` ← IVScene: GLB chunks in one root, catalog materials, visibility and opacity, highlight, picking, locate pulse, behind-wall fade, orbit viewer.
-- [ ] **AND-M3-03** (needs device check) Guest screens: guest flow, landing, PIN, problem states and access gate, building home, status line, 3D viewer, rooms, documents, object card, diagnostics.
+- [x] **AND-M3-01** (builds in CI; needs device check) `:design` ← IVDesign: palette, Anton/Barlow/JetBrains Mono, buttons, chips, loading bar, detent slider, wordmark.
+- [x] **AND-M3-02** (rules JVM-tested in `modelkit.scene`; builds in CI; needs device check: meshopt GLBs in Filament, transparency, picking of long diagonal runs) `:scene` ← IVScene: GLB chunks in one root, catalog materials, visibility and opacity, highlight, picking, locate pulse, behind-wall fade, orbit viewer.
+- [x] **AND-M3-03** (rules JVM-tested; builds in CI; needs device check) Guest screens: guest flow, landing, PIN, problem states and access gate, building home, status line, 3D viewer, rooms, documents, object card, diagnostics.
 
 ### AND-M4 · AR
 
-- [ ] **AND-M4-01** (needs device check) `:ar` ← IVAR: ARCore session, Augmented Images from plates, raycasts, depth marks, site anchors, `AnchorMath`.
-- [ ] **AND-M4-02** (needs device check) AR screens, as `docs/ios-ar-reference.md` §3–§8: preflight; AR experience (plate coaching, status tag, finding-the-floor row, crosshair states, ⋮ menu with Level, Room, Re-align, align by points, Adjust placement / Place again / Place manually, safety note, admin items); the 4 s "No plate?" offer; points alignment (room picker, marks, matching, symmetric choice, confirm, copy details); manual placement and fine-tune; starting storey and floor-change refit; floor glue; sites and Fix here; locate chip and arrow; See inside; plate registration and Test now; room save card; the first-use safety card; haptics; analytics.
+- [x] **AND-M4-01** (the iOS view's state machine and rules are `modelkit.ar`, JVM-tested; builds in CI; needs device check) `:ar` ← IVAR: ARCore session, Augmented Images from plates, raycasts, depth marks, site anchors, `AnchorMath`.
+- [x] **AND-M4-02** (rules JVM-tested; builds in CI; needs device check) AR screens, as `docs/ios-ar-reference.md` §3–§8: preflight; AR experience (plate coaching, status tag, finding-the-floor row, crosshair states, ⋮ menu with Level, Room, Re-align, align by points, Adjust placement / Place again / Place manually, safety note, admin items); the 4 s "No plate?" offer; points alignment (room picker, marks, matching, symmetric choice, confirm, copy details); manual placement and fine-tune; starting storey and floor-change refit; floor glue; sites and Fix here; locate chip and arrow; See inside; plate registration and Test now; room save card; the first-use safety card; haptics; analytics.
 
 ### AND-M5 · Signed-in app
 
-- [ ] **AND-M5-01** (needs device check) App: tabs (Buildings, Search, Scan, Profile), sign-in (Custom Tabs OAuth, email), update required, App Links and the `insiteview://auth/callback` intent, Install Referrer handoff, save building.
+- [x] **AND-M5-01** (builds in CI; needs device check: Custom Tabs return, App Links, Install Referrer, camera) App: tabs (Buildings, Search, Scan, Profile), sign-in (Custom Tabs OAuth, email), update required, App Links and the `insiteview://auth/callback` intent, Install Referrer handoff, save building.
 
 ### AND-M6 · Localization and release
 
-- [ ] **AND-M6-01** Strings: `scripts/xcstrings-to-android.py` converts the iOS String Catalog (en, pt-BR, es) into `strings.xml`; native review with iOS's IOS-M5-01.
+- [ ] **AND-M6-01** Strings: `scripts/xcstrings-to-android.py` converts the iOS String Catalog (en, pt-BR, es) into `strings.xml` (done; re-run it whenever the catalog changes); Android-only strings in `strings_android.xml` / `strings_app.xml`. Open: native review with iOS's IOS-M5-01.
 - [ ] **AND-M6-02** App icon (adaptive, monochrome) from `insiteview-api/brand/render.py`.
 - [ ] **AND-M6-03** Sentry in the app (with iOS's IOS-M5-04), Play data safety form.
 - [ ] **AND-M6-04** Release workflow: signed `bundleRelease`, upload to the internal track.
