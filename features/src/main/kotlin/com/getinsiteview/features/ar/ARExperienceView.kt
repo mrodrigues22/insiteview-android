@@ -351,6 +351,12 @@ class ARExperienceModel(val session: BuildingSession, context: Context, private 
     fun retrySession() {
         sessionFailed = false
         sessionAttempt += 1
+        // The old session's world (anchors, planes, the alignment in it) is gone: start the
+        // alignment over in the new one, as when AR opens.
+        view.reset()
+        if (platesConfigured) {
+            view.configure(plates = session.plates, scannedPlate = session.scannedPlate, corrections = session.roomCorrections)
+        }
     }
 
     /**
