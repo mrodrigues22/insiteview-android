@@ -12,8 +12,8 @@ opens and offers "Get the app", which brings the visitor back to the same buildi
 ## 1. Platform
 
 - **Language and UI:** Kotlin 2.4, Jetpack Compose (Material 3 underneath, the blueprint design on top), coroutines and `StateFlow`.
-- **3D and AR:** SceneView 4.53 (Filament + ARCore 1.56). The API's GLB chunks (gltfpack, `EXT_meshopt_compression`, `KHR_mesh_quantization`) load through Filament's gltfio. ARCore is optional in the manifest: phones without it get 3D and no AR, as iPhones without AR would.
-- **Devices:** minSdk 26 (Android 8.0). Target: a mid-range 2023 phone (Pixel 7a-class) at 60 fps, a low-end ARCore phone at 30 fps. The ARCore Depth API stands in for LiDAR where supported.
+- **3D and AR:** SceneView 4.53 (Filament + ARCore 1.56); AR behaviour and the ARKit → ARCore mapping in §3 "AR". The API's GLB chunks (gltfpack, `EXT_meshopt_compression`, `KHR_mesh_quantization`) load through Filament's gltfio. ARCore is optional in the manifest: phones without it get 3D and no AR, as iPhones without AR would.
+- **Devices:** minSdk 26 (Android 8.0). Target: a mid-range 2023 phone (Pixel 7a-class) at 60 fps, a low-end ARCore phone at 30 fps. Phones with a time-of-flight depth sensor get the LiDAR features (wall and corner marks); others behave as iPhones without LiDAR (§3 "AR").
 - **Build:** Gradle 9.8, AGP 9.4 (built-in Kotlin and the new DSL in Android modules; the Kotlin Gradle plugin for the JVM modules), version catalog in `gradle/libs.versions.toml`.
 - **Build types:** `debug` (applicationId suffix `.local`; `local.properties` can set `iv.apiBaseUrl` / `iv.webBaseUrl`), `staging` (`.staging`), `release`. Until a staging environment exists, all three point at production, as on iOS.
 
@@ -75,14 +75,47 @@ One `BuildingScene` (Filament entities under one root) moves between the 3D view
 
 ### AR
 
-- Plates: ARCore Augmented Images built from each plate's PNG (`imageUrl`) with its physical width
-  (`sizeMm`). ARCore's image pose has +Y along the image normal, +Z down the image; `AnchorMath`
-  converts it to IVModelKit's `PlateFrame` convention (the iOS ARKit conversion has the same role) and is unit-tested.
-- The solver, smoothing, re-anchoring, reference points, sites, room corrections, locate and the
-  behind-wall rule are the iOS code ported to `:modelkit`, with the iOS tests ported.
-- LiDAR marks (walls, wall corners) use ARCore Depth hit tests on devices that support depth, and
-  are hidden elsewhere (iOS hides them without LiDAR).
+The iOS AR is specified by its code; `docs/ios-ar-reference.md` describes it as implemented
+(session, raycasts, the floor, the state machine, every string, constants with file:line). Port the
+behaviour from the Swift files it cites, not from either plan. Where the logic lives:
 
+- **`:modelkit`** (ported with the iOS tests): PlateAlignment (`PlateFrame`, smoother, blend),
+  PlateAnchoring (the state machine), AlignmentSites, ReferenceAlignment (matching, refit),
+  RoomOutline, RoomCorrections, LidarAim, PlateRegistration/PlateSampler, ManualAlignment
+  (`intersectFloor`, `floorHeight`), LocateGuide, BehindWallFade, ModelFilters/SeeInside,
+  `Manifest.startingStorey`.
+- **`:ar`** (iOS `ARAlignmentView`, `AnchorMath`): the session and its settings, the image
+  database, the floor choice (`worldFloorY`) and the 5 mm floor-change notifier, crosshair targeting
+  (35° gate, ±0.18 m corner side rays), mark capture (500 ms, 5 samples, 2 cm median filter), the
+  placement state and gestures, lost detection, site anchors, the frame loop (anchoring tick, root
+  transform, crosshair, locate at 10 Hz, proximity). Same rules, ARCore calls.
+- **`:features`** (iOS `ARExperienceModel`/View, `PointsAlignment`, `PlateRegistrationFlow`,
+  `SeeInsidePanel`, the preflight): status-tag and coaching priorities, the 4 s "No plate?" offer,
+  menus and their conditions, Fix here, room save, registration, the safety card, copy details.
+
+ARKit → ARCore mapping (each line is a decision; device checks in `docs/device-test.md`):
+
+| iOS | Android |
+|---|---|
+| `detectionImages`, `maximumNumberOfTrackedImages = 1` | One `AugmentedImageDatabase` rebuilt on each settings change (placed plates while `wantsImageDetection && !isMarking`, plus the plate being registered), `session.configure` without reset. Width `sizeMm / 1000` m (quiet zone included). Only `FULL_TRACKING` image updates feed the smoother; `LAST_KNOWN_POSE` is ignored. Re-align drops the image anchors' last poses (iOS removes the anchors to force re-detection). |
+| Image pose → `PlateFrame` (`AnchorMath`) | ARCore's augmented-image pose has the same axes as ARKit's (x right, y the normal, z down the image), so the conversion is the same: right = x, up = −z, normal = y. `YawTransform` from a site anchor's pose likewise. Unit-tested in `:ar`'s JVM tests on matrices. |
+| `ARPlaneAnchor.classification == .floor` | ARCore has no floor class: `worldFloorY` is the lowest `HORIZONTAL_UPWARD_FACING` plane of at least 0.25 m² (the iOS fallback rule). Device check: reflections on shiny floors. |
+| `hasLiDAR` (wall and corner marks, mesh) | `hasDepthSensor`: ARCore `DepthMode.RAW_DEPTH_ONLY` supported **and** the back camera reports `DEPTH_OUTPUT` (a time-of-flight sensor). Motion-stereo depth alone is too noisy for the 1.5 cm / 2° tolerances tuned on LiDAR, so those phones behave as iPhones without LiDAR (floor corners only; the crosshair says to point more straight down). Wall hits: vertical planes first, then a depth hit. ARCore has no door/window plane classes. Mesh reconstruction has no counterpart; iOS raycasts never use it. |
+| `estimatedPlane` raycasts, `arView.ray(through:)` | `frame.hitTest` against planes, then depth points; screen rays from the ARCore camera's view and projection matrices. |
+| `ARCoachingOverlayView` (horizontal plane, manual placing only) | A coaching card with the same gating and the iOS strings. |
+| `SessionRelay` (delegate queue, newest frame only) | ARCore frames come from `session.update()` on the render thread: reduce each to a `FrameSample` value there and hand only the newest to the main thread. |
+| Interruption, relocalization, `.limited` reasons | `TrackingState.PAUSED` + `TrackingFailureReason` → the same `TrackingStatus` values; activity pause → interrupted (alignment lost at once), resume → relocalizing. Only relocalizing/not-available start the 2 s lost timer, as on iOS. |
+| Thermal (`.serious`: no mesh, no environment texturing, ≤ 30 fps smallest format, no wall aims) | `PowerManager` thermal status ≥ `THERMAL_STATUS_SEVERE` (API 29+; never hot below): light estimation off, a 30 fps `CameraConfig` with the smallest size, no wall aims. The initial status is read at start (iOS only reacts to changes: fixed here). |
+| No occlusion, render effects off, `isIdleTimerDisabled` | Depth occlusion off in SceneView, no post-processing in AR, `FLAG_KEEP_SCREEN_ON` while AR runs. |
+| `OrbitViewers` release + 1 s camera wait | One Filament engine; the 3D viewer's SceneView is removed before the AR one starts (the building root moves between them, as on iOS). No wait needed unless the device test shows a black feed. |
+| RealityKit picking (collision boxes, convex hulls) | Ray–box picking in `:scene` with `PickingShape` boxes; long diagonal runs test the mesh's triangles. |
+| `OpacityComponent` (chunk × element) | Material alpha: See inside opacity on the chunk's materials times the proximity fade per element. |
+| Camera permission (`restricted`) | Android has no restricted state; "Don't ask again" maps to `CameraDenied(canOpenSettings = true)`. |
+| Admin AR (registration, room save) disabled in the App Clip | Always available to admins and owners (there is no Clip). |
+
+Known iOS quirks (`docs/ios-ar-reference.md` §10): Android copies the behaviour except two bugs,
+which it fixes and reports to iOS: wall mark discs keep their normal offset after a floor change
+(§10.13), and the thermal status is read at start (§10.5).
 ### Guest entry (no App Clip)
 
 - App Links: `https://getinsiteview.com/b/*` and `/a/*`, `autoVerify`, served by the web's
@@ -113,7 +146,7 @@ One `BuildingScene` (Filament entities under one root) moves between the 3D view
 | App Clip | App Links + web viewer + "Get the app" with Install Referrer handoff | Android has no App Clips; Google Play Instant is retired |
 | Sign in with Apple (native) | Apple through the web OAuth flow (Custom Tab) | Native Apple sign-in exists only on Apple platforms |
 | USDZ chunks (RealityKit) | GLB chunks (Filament) | Each platform gets its native format (master PLAN §6) |
-| ARKit image detection, LiDAR | ARCore Augmented Images, Depth API | Platform equivalents |
+| ARKit image detection, plane classification, LiDAR | ARCore Augmented Images, lowest large upward plane as the floor, ToF depth sensor | Platform equivalents; details and decisions in §3 "AR" |
 | QuickLook | `ACTION_VIEW` through a FileProvider | Platform equivalent |
 | VisionKit scanner | CameraX + ML Kit barcode scanning | Platform equivalent |
 | `SKOverlay` / App Store | Google Play (`market://`) | Platform equivalent |
@@ -146,7 +179,7 @@ One `BuildingScene` (Filament entities under one root) moves between the 3D view
 ### AND-M4 · AR
 
 - [ ] **AND-M4-01** (needs device check) `:ar` ← IVAR: ARCore session, Augmented Images from plates, raycasts, depth marks, site anchors, `AnchorMath`.
-- [ ] **AND-M4-02** (needs device check) AR screens: preflight, AR experience (plate coaching, status tag, menu, re-align), points alignment, manual and fine-tune, locate, See inside, plate registration, room corrections, "Fix here", safety sheet.
+- [ ] **AND-M4-02** (needs device check) AR screens, as `docs/ios-ar-reference.md` §3–§8: preflight; AR experience (plate coaching, status tag, finding-the-floor row, crosshair states, ⋮ menu with Level, Room, Re-align, align by points, Adjust placement / Place again / Place manually, safety note, admin items); the 4 s "No plate?" offer; points alignment (room picker, marks, matching, symmetric choice, confirm, copy details); manual placement and fine-tune; starting storey and floor-change refit; floor glue; sites and Fix here; locate chip and arrow; See inside; plate registration and Test now; room save card; the first-use safety card; haptics; analytics.
 
 ### AND-M5 · Signed-in app
 

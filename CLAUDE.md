@@ -3,7 +3,9 @@
 Android app for Insite View: a port of the iPhone app (`../insiteview-ios`) that behaves the same.
 The plan and checklist are in `docs/PLAN.md` (items `AND-M{n}-{nn}`); the master plan (API contract,
 asset contract, milestones) is `../insiteview-api/docs/PLAN.md`. When the two apps should differ,
-the reason is written in `docs/PLAN.md` §6 "Differences from iOS"; otherwise iOS is the spec.
+the reason is written in `docs/PLAN.md` §6 "Differences from iOS"; otherwise iOS is the spec, and
+the spec is the iOS code (its plan can be stale). For AR start from `docs/ios-ar-reference.md`, then
+read the Swift it cites.
 
 ## Commands
 
