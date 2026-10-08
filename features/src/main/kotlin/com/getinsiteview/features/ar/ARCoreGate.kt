@@ -61,9 +61,9 @@ fun ARCoreGate(onClose: () -> Unit, content: @Composable () -> Unit) {
     LaunchedEffect(checks) { availability = checkARCore(context) }
 
     fun requestInstall(userRequested: Boolean) {
-        val activity = activity ?: return
+        val host = activity ?: return
         try {
-            when (ArCoreApk.getInstance().requestInstall(activity, userRequested)) {
+            when (ArCoreApk.getInstance().requestInstall(host, userRequested)) {
                 ArCoreApk.InstallStatus.INSTALLED -> {
                     installRequested = false
                     availability = ARCoreAvailability.CHECKING

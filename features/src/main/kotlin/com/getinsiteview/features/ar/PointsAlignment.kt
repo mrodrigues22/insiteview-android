@@ -155,13 +155,29 @@ class PointsAlignment(
     private var lastOutcome: ReferenceAlignment.Outcome? = null
     private var copiedJob: Job? = null
 
+    /** Ended (cancelled or confirmed): the view's callbacks no longer reach it (iOS: `[weak self]`). */
+    private var ended = false
+    private val crosshairListener: (CrosshairState) -> Unit = { state -> if (!ended) crosshair = state }
+    private val floorListener: (Double) -> Unit = { if (!ended) floorMoved() }
+
     init {
         val eligible = rooms(session).map { it.id }
         roomID = ARExperienceRules.preselectedRoom(eligible, located = locatedRoomID, current = session.arFilters.roomID)
         showRoomLevel()
-        view.onCrosshairChange = { state -> crosshair = state }
-        view.onFloorChange = { floorMoved() }
+        view.onCrosshairChange = crosshairListener
+        view.onFloorChange = floorListener
         session.holdsSceneWork = true
+    }
+
+    /**
+     * The screen let go of it (cancelled or confirmed): a later floor change must not preview its
+     * fit again (on iOS the closures die with it).
+     */
+    fun end() {
+        ended = true
+        copiedJob?.cancel()
+        if (view.onCrosshairChange === crosshairListener) view.onCrosshairChange = null
+        if (view.onFloorChange === floorListener) view.onFloorChange = null
     }
 
     // Rooms and their points
@@ -502,6 +518,7 @@ internal fun TextLink(text: String, onClick: () -> Unit, enabled: Boolean = true
     )
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun RoomLine(alignment: PointsAlignment) {
     var expanded by remember { mutableStateOf(false) }

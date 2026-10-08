@@ -486,6 +486,7 @@ object ARExperienceRules {
     internal fun millimetres(value: Double): Double {
         val scaled = abs(value * 1000)
         val rounded = floor(scaled + 0.5)
+        if (rounded == 0.0) return 0.0
         return (if (value < 0) -rounded else rounded) / 1000
     }
 

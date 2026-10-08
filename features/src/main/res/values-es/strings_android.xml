@@ -5,4 +5,26 @@
     <string name="back">Atrás</string>
     <!-- Guest landing: save section body (iOS says "on any iPhone"). -->
     <string name="save_it_to_a_free_account_on_any_phone">Guárdalo en una cuenta gratuita para encontrarlo de nuevo en Inmuebles, en cualquier teléfono.</string>
+    <!-- AR coaching line, plates, alignment lost (iOS says "your iPhone"). -->
+    <string name="alignment_lost_point_at_a_plate_again_or_move_slowly_so_your_phone">Alineación perdida. Apunta de nuevo a una placa, o mueve el teléfono despacio para que se ubique.</string>
+    <!-- AR coaching line, placed by hand, alignment lost (iOS says "your iPhone"). -->
+    <string name="alignment_lost_move_slowly_so_your_phone_finds_its_place_or">Alineación perdida. Mueve el teléfono despacio para que se ubique, o vuelve a colocar el modelo.</string>
+    <!-- AR coaching line, placing by hand before the floor is found (iOS says "your iPhone"). -->
+    <string name="move_your_phone_slowly_to_find_the_floor">Mueve el teléfono despacio para encontrar el suelo.</string>
+    <!-- AR camera permission: restricted by policy (iOS says "this iPhone"). -->
+    <string name="the_camera_is_restricted_on_this_phone_you_can_still_explore">La cámara está restringida en este teléfono. Aún puedes explorar el modelo en 3D.</string>
+    <!-- AR: ARCore missing or too old on a phone that supports it. Title. -->
+    <string name="get_google_play_services_for_ar">Instala Google Play Services para AR</string>
+    <!-- AR: ARCore missing or too old. Message under the title. -->
+    <string name="insite_view_needs_google_play_services_for_ar">Insite View necesita Google Play Services para AR para mostrar el modelo en tu habitación. Es gratis en Google Play.</string>
+    <!-- AR: installing ARCore was declined or failed. -->
+    <string name="google_play_services_for_ar_couldn_t_be_installed">No se pudo instalar Google Play Services para AR. Inténtalo de nuevo o explora el modelo en 3D.</string>
+    <!-- AR: button that installs Google Play Services for AR. -->
+    <string name="install">Instalar</string>
+    <!-- AR: the phone doesn't support ARCore. Title. -->
+    <string name="ar_isn_t_available_on_this_phone">La AR no está disponible en este teléfono</string>
+    <!-- AR: the phone doesn't support ARCore. Message. -->
+    <string name="this_phone_can_t_show_the_model_in_your_room">Este teléfono no puede mostrar el modelo en tu habitación. Aún puedes explorarlo en 3D.</string>
+    <!-- AR: the ARCore session failed to start (camera in use, ARCore error). -->
+    <string name="ar_couldn_t_start_try_again_or_explore_the_model_in_3d">No se pudo iniciar la AR. Inténtalo de nuevo o explora el modelo en 3D.</string>
 </resources>
