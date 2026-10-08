@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.ExperimentalEphemeralBrowsing
 import com.getinsiteview.api.account.OAuthFlow
 import java.lang.ref.WeakReference
 import java.net.URI
@@ -102,8 +103,12 @@ object OAuthCallbackBroker {
         // Prefer the activity on screen, so the tab opens in the app's task.
         val activity = currentActivity?.get()?.takeUnless { it.isFinishing || it.isDestroyed }
         val launcher: Context = activity ?: context
+        // Ephemeral, like iOS's `preferredBrowserSession: .ephemeral`: no cookies shared with
+        // the browser, so a different account can sign in. Browsers without support ignore it.
+        @OptIn(ExperimentalEphemeralBrowsing::class)
         val intent = CustomTabsIntent.Builder()
             .setShowTitle(true)
+            .setEphemeralBrowsingEnabled(true)
             .build()
         if (launcher !is Activity) intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
