@@ -201,7 +201,7 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 ### AND-M6 · Localization and release
 
 - [ ] **AND-M6-01** Strings: `scripts/xcstrings-to-android.py` converts the iOS String Catalog (en, pt-BR, es) into `strings.xml` (done; re-run it whenever the catalog changes); Android-only strings in `strings_android.xml` / `strings_app.xml`. Open: native review with iOS's IOS-M5-01.
-- [ ] **AND-M6-02** App icon (adaptive, monochrome) from `insiteview-api/brand/render.py`.
+- [x] **AND-M6-02** App icon (adaptive, monochrome) and the Play Store icon from `insiteview-api/brand/render.py --android`.
 - [ ] **AND-M6-03** Sentry in the app (with iOS's IOS-M5-04), Play data safety form.
-- [ ] **AND-M6-04** Release workflow: signed `bundleRelease`, upload to the internal track.
+- [x] **AND-M6-04** Release workflow (`.github/workflows/release.yml`): signed `bundleRelease` on `v*` tags or by hand, AAB/APK/mapping as artifacts, upload to a Play track when `PLAY_SERVICE_ACCOUNT_JSON` is set; CI also builds the release variant. Checked unsigned (no secrets yet); signing and upload wait on AND-M0-04.
 - [ ] **AND-M6-05** Run `docs/device-test.md` on two phones and a printed plate; App Link verification on a release build.
