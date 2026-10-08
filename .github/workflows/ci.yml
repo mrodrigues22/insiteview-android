@@ -38,7 +38,7 @@ jobs:
       - name: Error summary
         if: failure()
         run: |
-          grep -E "^e: |^w: .*(deprecated|unchecked)|> Task .* FAILED|FAILED$|What went wrong|Lint found|tests completed" build.log | sed 's#file:///home/runner/work/insiteview-android/insiteview-android/##' | head -150 || true
+          grep -E "^e: |^w: .*(deprecated|unchecked)|> Task .* FAILED|FAILED$|What went wrong|Lint found|: Error: |tests completed" build.log | sed 's#file:///home/runner/work/insiteview-android/insiteview-android/##' | head -150 || true
 
       - name: Test reports
         if: failure()

@@ -149,6 +149,7 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 | ARKit image detection, plane classification, LiDAR | ARCore Augmented Images, lowest large upward plane as the floor, ToF depth sensor | Platform equivalents; details and decisions in §3 "AR" |
 | QuickLook | `ACTION_VIEW` through a FileProvider | Platform equivalent |
 | VisionKit scanner | CameraX + ML Kit barcode scanning | Platform equivalent |
+| `ASWebAuthenticationSession` ephemeral | A Custom Tab sharing the browser's cookies | androidx.browser 1.9 has no ephemeral tabs; revisit when it does |
 | `SKOverlay` / App Store | Google Play (`market://`) | Platform equivalent |
 | Language: system settings link | Per-app language (Android 13+), system settings link before | Platform equivalent |
 

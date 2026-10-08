@@ -9,7 +9,7 @@ import com.getinsiteview.design.IvTheme
 import com.getinsiteview.features.app.AppRootModel
 
 /**
- * The app's single activity (`singleTask`): the tabs in [AppRoot]. App Links for `/b/*` and `/a/*`
+ * The app's single activity (`singleTask`): the tabs in [AppRoot]. App Links for `/b/…` and `/a/…`
  * (IOS-M1-05) arrive as `ACTION_VIEW` intents, in [onCreate] or [onNewIntent], and go to
  * [AppRootModel.open]; `insiteview://auth/callback` completes the social sign-in waiting in
  * [OAuthCallbackBroker].

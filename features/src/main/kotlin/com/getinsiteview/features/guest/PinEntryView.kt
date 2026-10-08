@@ -206,7 +206,7 @@ private fun PinStatus(model: PinEntryModel) {
             model.refresh(now)
         }
     }
-    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current).get(0) ?: Locale.getDefault()
+    val locale = ConfigurationCompat.getLocales(LocalConfiguration.current).get(0) ?: Locale.ROOT
     Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
         val warn = Palette.warn
         when (val status = model.pad.status) {

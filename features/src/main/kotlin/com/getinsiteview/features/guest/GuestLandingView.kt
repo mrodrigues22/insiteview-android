@@ -393,7 +393,7 @@ private suspend fun save(session: BuildingSession, prompt: SignInPrompt) {
 
 @Composable
 internal fun currentLocale(): Locale =
-    ConfigurationCompat.getLocales(LocalConfiguration.current).get(0) ?: Locale.getDefault()
+    ConfigurationCompat.getLocales(LocalConfiguration.current).get(0) ?: Locale.ROOT
 
 /** A date in the locale's order for a CLDR skeleton ("MMMyyyy" → "Oct 2026"), in the device's zone. */
 internal fun formatDate(instant: Instant, skeleton: String, locale: Locale): String {
