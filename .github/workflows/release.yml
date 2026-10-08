@@ -66,7 +66,7 @@ jobs:
           IV_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.IV_UPLOAD_KEYSTORE_PASSWORD }}
           IV_UPLOAD_KEY_ALIAS: ${{ secrets.IV_UPLOAD_KEY_ALIAS }}
           IV_UPLOAD_KEY_PASSWORD: ${{ secrets.IV_UPLOAD_KEY_PASSWORD }}
-        run: ./gradlew :core:test :modelkit:test :api:test testReleaseUnitTest :app:bundleRelease :app:assembleRelease
+        run: ./gradlew :core:test :modelkit:test :api:test testDebugUnitTest :app:bundleRelease :app:assembleRelease
 
       - uses: actions/upload-artifact@v5
         with:
