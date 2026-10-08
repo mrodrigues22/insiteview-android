@@ -33,11 +33,11 @@ class YawTransform(yaw: Double, val translation: Vec3) {
     fun then(next: YawTransform): YawTransform =
         YawTransform(yaw = yaw + next.yaw, translation = rotate(translation, by = next.yaw) + next.translation)
 
-    /** The transform with the building moved by [delta] (world metres). */
+    /** The transform with the building moved by [by] (world metres). */
     fun translated(by: Vec3): YawTransform = YawTransform(yaw = yaw, translation = translation + by)
 
     /**
-     * The transform with the building turned by [angle] about a vertical axis through [about]
+     * The transform with the building turned by [by] radians about a vertical axis through [about]
      * (world), e.g. the point under a two-finger twist.
      */
     fun rotated(by: Double, about: Vec3): YawTransform {
