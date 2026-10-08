@@ -265,11 +265,11 @@ abstract class ARAlignmentLogic(
      * The floor coaching (iOS `ARCoachingOverlayView`, goal horizontal plane) may show: only for
      * manual placement before the first placement, not while aiming (AAV 563-571).
      */
-    var coachingAllowed: Boolean = false
+    var coachingAllowed: Boolean = true
         private set
 
     /** The coaching card shows: allowed, and no floor plane yet or tracking not normal (the overlay's own goal). */
-    var showsCoaching: Boolean = false
+    var showsCoaching: Boolean = true
         private set
 
     var onCoachingChange: ((Boolean) -> Unit)? = null
