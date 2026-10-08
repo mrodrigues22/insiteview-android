@@ -1,5 +1,6 @@
 package com.getinsiteview.android
 
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,12 +73,32 @@ fun ProfileTab(dependencies: AppDependencies) {
     val account = dependencies.account
     val auth by account.state.collectAsStateWithLifecycle()
 
+    // Debug builds: the AR marking device test (iOS docs/spikes/reference-points.md).
+    var showsMarkingTest by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         if (account.isSignedIn) account.refreshProfile()
     }
 
+    if (showsMarkingTest) {
+        androidx.activity.compose.BackHandler { showsMarkingTest = false }
+        com.getinsiteview.features.diagnostics.MarkingTestView(onClose = { showsMarkingTest = false })
+        return
+    }
+
     Scaffold(
-        topBar = { IvTopBar(title = stringResource(FeaturesR.string.profile), onBack = null) },
+        topBar = {
+            IvTopBar(title = stringResource(FeaturesR.string.profile), onBack = null, actions = {
+                if (BuildConfig.DEBUG) {
+                    androidx.compose.material3.IconButton(onClick = { showsMarkingTest = true }) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Filled.CenterFocusStrong,
+                            contentDescription = "AR marking test",
+                        )
+                    }
+                }
+            })
+        },
         containerColor = Palette.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
