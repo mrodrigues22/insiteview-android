@@ -24,8 +24,9 @@ android {
         applicationId = "com.getinsiteview.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // The release workflow sets these from the tag and run number (docs/PLAN.md §5).
+        versionCode = System.getenv("IV_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("IV_VERSION_NAME") ?: "1.0.0"
         buildConfigField("String", "SENTRY_DSN", "\"\"")
         // Google Play's listing, for "Update" on "Update required".
         buildConfigField("String", "PLAY_STORE_PACKAGE", "\"com.getinsiteview.android\"")
@@ -51,19 +52,20 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"${local("iv.apiBaseUrl", "https://api.getinsiteview.com")}\"")
             buildConfigField("String", "WEB_BASE_URL", "\"${local("iv.webBaseUrl", "https://getinsiteview.com")}\"")
         }
-        create("staging") {
-            initWith(getByName("release"))
-            applicationIdSuffix = ".staging"
-            matchingFallbacks += "release"
-            signingConfig = signingConfigs.getByName("debug")
-            buildConfigField("String", "API_BASE_URL", "\"https://api.getinsiteview.com\"")
-            buildConfigField("String", "WEB_BASE_URL", "\"https://getinsiteview.com\"")
-        }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (System.getenv("IV_UPLOAD_KEYSTORE") != null) signingConfig = signingConfigs.getByName("release")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.getinsiteview.com\"")
+            buildConfigField("String", "WEB_BASE_URL", "\"https://getinsiteview.com\"")
+        }
+        // After release: initWith copies release's settings as they are now (minify, R8 rules).
+        create("staging") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".staging"
+            matchingFallbacks += "release"
+            signingConfig = signingConfigs.getByName("debug")
             buildConfigField("String", "API_BASE_URL", "\"https://api.getinsiteview.com\"")
             buildConfigField("String", "WEB_BASE_URL", "\"https://getinsiteview.com\"")
         }

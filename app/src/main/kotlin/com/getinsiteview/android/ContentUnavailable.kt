@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -73,4 +74,12 @@ fun ContentUnavailable(
 @Composable
 fun UnavailableIcon(icon: ImageVector) {
     Icon(icon, contentDescription = null, modifier = Modifier.size(48.dp))
+}
+
+/** A [ContentUnavailable] action in iOS's default button style: accent-coloured text. */
+@Composable
+fun PlainActionButton(text: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick) {
+        Text(text, style = IvType.body(), color = Palette.accent)
+    }
 }

@@ -9,7 +9,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -44,18 +45,23 @@ fun DetentSlider(
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
-    val current = rememberUpdatedState(value)
+    // The newest value, also between a drag's last onValueChange and onValueChangeFinished,
+    // which can come before the caller's new value is recomposed in.
+    val current = remember { DoubleArray(1) { value } }
+    SideEffect { current[0] = value }
     val nearest = detents.minByOrNull { abs(it.value - value) }?.label.orEmpty()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Slider(
             value = value.toFloat(),
             onValueChange = { new ->
-                if (reachedDetent(current.value, new.toDouble())) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                if (reachedDetent(current[0], new.toDouble())) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                current[0] = new.toDouble()
                 onValueChange(new.toDouble())
             },
             onValueChangeFinished = {
-                val target = snapped(current.value)
-                if (target != current.value) {
+                val target = snapped(current[0])
+                if (target != current[0]) {
+                    current[0] = target
                     onValueChange(target)
                     haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 }
@@ -83,6 +89,7 @@ fun DetentSlider(
                         else -> TextAlign.Center
                     },
                     modifier = Modifier.weight(1f).clickable {
+                        current[0] = detent.value
                         onValueChange(detent.value)
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     },

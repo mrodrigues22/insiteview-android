@@ -6,10 +6,17 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.ViewConfiguration
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import com.getinsiteview.modelkit.geometry.Bounds
@@ -57,8 +64,12 @@ class OrbitViewerView {
     /** Called with the element node under a tap (`null` for empty space); `BuildingScene.elementID` names it. */
     var onTap: ((SceneNode?) -> Unit)? = null
 
-    /** A preview on the guest landing isn't interactive. */
-    var isInteractive: Boolean = true
+    /**
+     * A preview on the guest landing isn't interactive: touches go through to what's around it
+     * (iOS disables the gestures and the landing sets `.allowsHitTesting(false)`), so the landing
+     * still scrolls from a drag on the preview. Compose state, so [OrbitViewer] follows changes.
+     */
+    var isInteractive: Boolean by mutableStateOf(true)
 
     private var scene: BuildingScene? = null
     private var container: SceneNode? = null
@@ -369,32 +380,46 @@ fun OrbitViewer(view: OrbitViewerView, modifier: Modifier = Modifier) {
         isShadowCaster = false
     }
     val touch = remember(view, context) { OrbitTouch(context, view) }
-    SceneView(
-        modifier = modifier.onSizeChanged { view.sizeChanged(it.width, it.height) },
-        engine = engine,
-        modelLoader = SceneEngine.modelLoader(context),
-        materialLoader = SceneEngine.materialLoader(context),
-        environmentLoader = environmentLoader,
-        autoCenterContent = false,
-        autoFitContent = false,
-        environment = environment,
-        mainLightNode = sun,
-        fillLightNode = null,
-        cameraNode = cameraNode,
-        cameraManipulator = null,
-        onGestureListener = null,
-        onTouchEvent = { event, _ ->
-            touch.onTouch(event)
-            true
-        },
-        onFrame = { view.onFrame() },
-    ) {
-        Node {
-            val container = parentNode
-            DisposableEffect(container) {
-                view.containerAttached(container)
-                onDispose { view.containerDetached(container) }
+    Box(modifier.onSizeChanged { view.sizeChanged(it.width, it.height) }) {
+        SceneView(
+            modifier = Modifier.fillMaxSize(),
+            engine = engine,
+            modelLoader = SceneEngine.modelLoader(context),
+            materialLoader = SceneEngine.materialLoader(context),
+            environmentLoader = environmentLoader,
+            autoCenterContent = false,
+            autoFitContent = false,
+            environment = environment,
+            mainLightNode = sun,
+            fillLightNode = null,
+            cameraNode = cameraNode,
+            cameraManipulator = null,
+            onGestureListener = null,
+            onTouchEvent = { event, _ ->
+                touch.onTouch(event)
+                true
+            },
+            onFrame = { view.onFrame() },
+        ) {
+            Node {
+                val container = parentNode
+                DisposableEffect(container) {
+                    view.containerAttached(container)
+                    onDispose { view.containerDetached(container) }
+                }
             }
+        }
+        if (!view.isInteractive) {
+            // SceneView's surface consumes every touch it gets, which would keep a scrolling parent
+            // from scrolling. This sibling on top takes the touches instead and never consumes them,
+            // so they reach the parent (iOS `.allowsHitTesting(false)`).
+            Box(
+                Modifier.matchParentSize().pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) awaitPointerEvent()
+                    }
+                },
+            )
         }
     }
 }

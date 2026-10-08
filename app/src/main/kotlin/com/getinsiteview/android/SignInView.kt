@@ -101,7 +101,8 @@ fun SignInView(
     )
 
     LaunchedEffect(Unit) {
-        providers = account.oauthProviders()
+        // Apple first, as on iOS (its native button is above Google and Microsoft there).
+        providers = account.oauthProviders().sortedBy { it != OAuthProvider.APPLE }
     }
 
     fun run(method: SignInMethod, operation: suspend () -> Unit) {
@@ -178,7 +179,7 @@ private fun SignInHeader(reason: SignInReason) {
     ) {
         when (reason) {
             is SignInReason.SaveBuilding -> {
-                Icon(Icons.Outlined.BookmarkBorder, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(52.dp))
+                Icon(Icons.Outlined.BookmarkBorder, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(44.dp))
                 Text(
                     stringResource(FeaturesR.string.save_x, reason.name).uppercase(),
                     style = IvType.display(26.sp),
@@ -194,7 +195,12 @@ private fun SignInHeader(reason: SignInReason) {
             }
             SignInReason.Account -> {
                 Wordmark(Modifier.padding(bottom = 8.dp), size = 34.sp)
-                Text(stringResource(FeaturesR.string.sign_in_to_insite_view).uppercase(), style = IvType.display(22.sp), color = Palette.ink)
+                Text(
+                    stringResource(FeaturesR.string.sign_in_to_insite_view).uppercase(),
+                    style = IvType.display(22.sp),
+                    color = Palette.ink,
+                    textAlign = TextAlign.Center,
+                )
                 Text(
                     stringResource(FeaturesR.string.see_your_company_s_buildings_the_ones_shared_with_you_and_th),
                     style = IvType.body(),

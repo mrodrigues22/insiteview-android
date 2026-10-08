@@ -169,7 +169,8 @@ private fun SignedInContent(
                 description = stringResource(FeaturesR.string.check_your_connection_and_try_again),
                 icon = { UnavailableIcon(Icons.Outlined.WifiOff) },
                 actions = {
-                    PrimaryActionButton(stringResource(FeaturesR.string.try_again), onClick = {
+                    // iOS: a plain (tinted text) button; only "Sign in" is the primary action.
+                    PlainActionButton(stringResource(FeaturesR.string.try_again), onClick = {
                         scope.launch { buildings.load(refresh = true) }
                     })
                 },
@@ -352,7 +353,7 @@ private fun EmptySegment(segment: BuildingListSegment, onScanRequested: () -> Un
             icon = { UnavailableIcon(Icons.Outlined.Apartment) },
             fillsScreen = false,
             actions = {
-                PrimaryActionButton(stringResource(FeaturesR.string.scan_a_code), onClick = onScanRequested)
+                PlainActionButton(stringResource(FeaturesR.string.scan_a_code), onClick = onScanRequested)
             },
         )
         BuildingListSegment.ACTIVE -> EmptySegmentText(stringResource(FeaturesR.string.none_of_your_buildings_are_live_right_now))

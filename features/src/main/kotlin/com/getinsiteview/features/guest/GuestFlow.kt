@@ -140,6 +140,8 @@ class GuestFlowModel(
     override fun onCleared() {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(foreground)
         session.cancel()
+        // The building's Filament models and materials (iOS frees them with the session).
+        session.scene.destroy()
     }
 
     companion object {

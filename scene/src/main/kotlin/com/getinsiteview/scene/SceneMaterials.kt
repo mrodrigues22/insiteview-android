@@ -21,7 +21,8 @@ import kotlin.math.roundToInt
  * (architecture, structure, meshes outside elements) fades to transparent copies of its glTF
  * colours ([GlbMaterial]). At full opacity the opaque material (or the file's own) is used again.
  *
- * Main thread only. The instances live for the app's life (a few per colour).
+ * Main thread only. The instances live as long as the building's scene (a few per colour);
+ * [destroy] frees them once nothing renders with them.
  */
 internal class SceneMaterials(private val loader: MaterialLoader) {
     private val surfaces = HashMap<Pair<CatalogColor, Int>, MaterialInstance>()
@@ -72,6 +73,14 @@ internal class SceneMaterials(private val loader: MaterialLoader) {
                 it.setColor(Float4(linear[0].toFloat(), linear[1].toFloat(), linear[2].toFloat(), minOf(alpha, 0.999f)), Colors.RgbaType.LINEAR)
             }
         }
+    }
+
+    /** Frees every instance made here (`BuildingScene.destroy`, after its renderables are gone). */
+    fun destroy() {
+        for (instance in surfaces.values + files.values + highlights.values) loader.destroyMaterialInstance(instance)
+        surfaces.clear()
+        files.clear()
+        highlights.clear()
     }
 
     private fun setEmissive(instance: MaterialInstance, r: Float, g: Float, b: Float, strength: Float) {

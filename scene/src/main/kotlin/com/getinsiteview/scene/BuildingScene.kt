@@ -134,6 +134,7 @@ class BuildingScene(context: Context) {
         val bytes = withContext(Dispatchers.IO) { file.url.readBytes() }
         val fileMaterials = withContext(Dispatchers.Default) { GlbMaterials.read(bytes) }
         if (chunks.containsKey(key)) return // loaded twice concurrently
+        if (isDestroyed) return // the building closed while the file was read
 
         val buffer = ByteBuffer.allocateDirect(bytes.size).order(ByteOrder.nativeOrder())
         buffer.put(bytes)
@@ -538,6 +539,32 @@ class BuildingScene(context: Context) {
             current = current.parent
         }
         return matrix
+    }
+
+    // endregion
+
+    // region Teardown
+
+    /** Whether [destroy] ran. */
+    var isDestroyed: Boolean = false
+        private set
+
+    /**
+     * Frees the building's Filament resources: every chunk's nodes and model, the locate marker,
+     * the root, and the materials made for it (iOS frees the entities when the session goes). Call
+     * on the main thread when the building closes, after the views let go of [root]; the scene
+     * isn't usable afterwards. Renderables go before the material instances they use.
+     */
+    fun destroy() {
+        if (isDestroyed) return
+        isDestroyed = true
+        for (key in chunks.keys.toList()) removeChunk(key)
+        showLocateMarker(null)
+        root.parent = null
+        root.destroy()
+        locateMaterial?.let { materialLoader.destroyMaterialInstance(it) }
+        locateMaterial = null
+        materials.destroy()
     }
 
     // endregion

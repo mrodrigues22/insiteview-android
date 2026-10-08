@@ -39,7 +39,10 @@ class InsiteViewApplication : Application() {
         val dependencies = root.dependencies.getOrNull() ?: return
         dependencies.applicationScope.launch {
             InstallReferrerHandoff.read(this@InsiteViewApplication, dependencies.handoff)
-            root.openHandoff()
+            // iOS takes the handoff when the app starts, before any link arrives, so a link the
+            // app was opened with wins. The referrer comes back asynchronously, after an App Link
+            // in onCreate: then the handoff is only used up, not opened over the link.
+            if (root.openRequests == 0) root.openHandoff() else dependencies.handoff.take()
         }
     }
 }
