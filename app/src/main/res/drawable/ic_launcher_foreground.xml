@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder mark (a red slash, as in the wordmark) until brand/render.py emits Android icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#E30532" android:pathData="M58,34 L66,34 L50,74 L42,74 Z" />
+</vector>

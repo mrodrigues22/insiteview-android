@@ -1,0 +1,42 @@
+# Android CI (docs/PLAN.md §4). The JVM modules' tests, then every Android module: build,
+# unit tests and lint. Runs on every push so Claude Code sessions (which can't reach Google's
+# Maven) see the Android build here.
+name: CI
+
+on:
+  pull_request:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build, test, lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: JVM module tests (core, modelkit, api)
+        run: ./gradlew :core:test :modelkit:test :api:test --continue
+
+      - name: Android build, unit tests and lint
+        run: ./gradlew assembleDebug testDebugUnitTest lintDebug --continue
+
+      - name: Test reports
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/test-results/

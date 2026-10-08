@@ -1,0 +1,13 @@
+# Gradle and Android Studio
+.gradle/
+build/
+.kotlin/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.jks
+.DS_Store
