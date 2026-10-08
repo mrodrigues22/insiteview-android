@@ -14,7 +14,7 @@ opens and offers "Get the app", which brings the visitor back to the same buildi
 - **Language and UI:** Kotlin 2.4, Jetpack Compose (Material 3 underneath, the blueprint design on top), coroutines and `StateFlow`.
 - **3D and AR:** SceneView 4.53 (Filament + ARCore 1.56). The API's GLB chunks (gltfpack, `EXT_meshopt_compression`, `KHR_mesh_quantization`) load through Filament's gltfio. ARCore is optional in the manifest: phones without it get 3D and no AR, as iPhones without AR would.
 - **Devices:** minSdk 26 (Android 8.0). Target: a mid-range 2023 phone (Pixel 7a-class) at 60 fps, a low-end ARCore phone at 30 fps. The ARCore Depth API stands in for LiDAR where supported.
-- **Build:** Gradle 9.8, AGP 9.4 (Kotlin plugin kept: `android.builtInKotlin=false`), version catalog in `gradle/libs.versions.toml`.
+- **Build:** Gradle 9.8, AGP 9.4 (built-in Kotlin and the new DSL in Android modules; the Kotlin Gradle plugin for the JVM modules), version catalog in `gradle/libs.versions.toml`.
 - **Build types:** `debug` (applicationId suffix `.local`; `local.properties` can set `iv.apiBaseUrl` / `iv.webBaseUrl`), `staging` (`.staging`), `release`. Until a staging environment exists, all three point at production, as on iOS.
 
 | BuildConfig key | debug | staging | release |

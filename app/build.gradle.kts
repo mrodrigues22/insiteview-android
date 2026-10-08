@@ -1,14 +1,15 @@
+import java.util.Properties
+
 // The app (App/ on iOS): tabs, sign-in, scanner, profile, App Links. Guest screens are in :features.
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 // Build types mirror the iOS configurations (Config/*.xcconfig on iOS, docs/PLAN.md §1). Until a
 // staging environment exists, all three point at production. `local.properties` can override
 // `iv.apiBaseUrl` / `iv.webBaseUrl` for the `local` build (a phone can't reach localhost).
-val localProperties = java.util.Properties().apply {
+val localProperties = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 fun local(key: String, default: String) = localProperties.getProperty(key) ?: default
@@ -77,7 +78,6 @@ android {
     packaging { jniLibs { useLegacyPackaging = false } }
 }
 
-kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
 dependencies {
     implementation(project(":features"))
