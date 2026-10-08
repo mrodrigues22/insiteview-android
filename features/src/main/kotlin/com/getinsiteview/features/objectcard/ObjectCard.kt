@@ -3,6 +3,10 @@
 package com.getinsiteview.features.objectcard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -371,6 +375,7 @@ fun ObjectCardSheet(
     context: ObjectCardContext,
     onLocateInAR: (() -> Unit)? = null,
     onShowIn3D: ((String) -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(selection) {
         if (context != ObjectCardContext.LIST) {
@@ -414,6 +419,18 @@ fun ObjectCardSheet(
         )
     }
     val model = remember(selection) { ObjectCardModel(selection, session) }
+    if (context == ObjectCardContext.VIEWER) {
+        // iOS: `.presentationBackgroundInteraction(.enabled(upThrough: .medium))`: at half height
+        // the model behind the card still orbits and picks. A non-modal panel in the viewer's Box.
+        NonModalCardPanel(
+            onDismiss = {
+                onSelectionChange(null)
+                runPending()
+            },
+            modifier = modifier,
+        ) { dismiss -> ObjectCardView(model, actions, dismiss = dismiss) }
+        return
+    }
     ModalBottomSheet(
         onDismissRequest = {
             onSelectionChange(null)
@@ -423,5 +440,61 @@ fun ObjectCardSheet(
         containerColor = Palette.background,
     ) {
         ObjectCardView(model, actions, dismiss = ::close)
+    }
+}
+
+/**
+ * The object card over the 3D viewer: a bottom panel at half height (the model behind it stays
+ * interactive) that a drag on its handle, or a tap, takes to nearly full height and back; dragging
+ * down from half height closes it. iOS: medium and large detents with background interaction up
+ * through medium.
+ */
+@Composable
+private fun NonModalCardPanel(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (dismiss: () -> Unit) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var drag by remember { mutableStateOf(0f) }
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val height = if (expanded) maxHeight * 0.92f else maxHeight * 0.5f
+        androidx.compose.material3.Surface(
+            color = Palette.background,
+            shadowElevation = 8.dp,
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(height),
+        ) {
+            Column {
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp)
+                        .clickable { expanded = !expanded }
+                        .draggable(
+                            orientation = androidx.compose.foundation.gestures.Orientation.Vertical,
+                            state = androidx.compose.foundation.gestures.rememberDraggableState { delta -> drag += delta },
+                            onDragStopped = {
+                                when {
+                                    drag < -40f -> expanded = true
+                                    drag > 40f && expanded -> expanded = false
+                                    drag > 40f -> onDismiss()
+                                }
+                                drag = 0f
+                            },
+                        ),
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.size(width = 36.dp, height = 4.dp)
+                            .background(Palette.line, androidx.compose.foundation.shape.RoundedCornerShape(2.dp)),
+                    )
+                }
+                content(onDismiss)
+            }
+        }
     }
 }

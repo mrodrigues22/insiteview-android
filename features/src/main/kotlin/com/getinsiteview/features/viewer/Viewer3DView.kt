@@ -155,17 +155,19 @@ fun Viewer3DView(session: BuildingSession, navigator: BuildingNavigator, focus: 
                     }
                     SystemChips(session, BuildingSession.SceneMode.VIEWER)
                 }
+                // Over the chips, like iOS's sheet; non-modal at half height (the model stays usable).
+                ObjectCardSheet(
+                    selection = selection,
+                    onSelectionChange = { selection = it },
+                    session = session,
+                    context = ObjectCardContext.VIEWER,
+                    onLocateInAR = ::showAR,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
 
-    ObjectCardSheet(
-        selection = selection,
-        onSelectionChange = { selection = it },
-        session = session,
-        context = ObjectCardContext.VIEWER,
-        onLocateInAR = ::showAR,
-    )
 }
 
 /** A flag read in `onDispose`, so not Compose state. */
