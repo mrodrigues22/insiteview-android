@@ -445,8 +445,12 @@ class ARExperienceModel(val session: BuildingSession, context: Context, private 
         val state = fixHere ?: return
         if (!state.crosshair.canMark || state.capturing) return
         fixHere = fixHere?.copy(capturing = true, problem = null)
-        val aim = view.captureFloorAim()
-        fixHere = fixHere?.copy(capturing = false)
+        // Cleared even when the card's scope is cancelled mid-capture (iOS's `Task` outlives the view).
+        val aim = try {
+            view.captureFloorAim()
+        } finally {
+            fixHere = fixHere?.copy(capturing = false)
+        }
         val current = view.fixableAlignment
         if (aim == null || current == null) {
             fixHere = fixHere?.copy(problem = FixProblem.UNSTEADY)
@@ -803,7 +807,8 @@ private fun ARContent(model: ARExperienceModel, onClose: () -> Unit) {
             }
 
             // iOS `ARCoachingOverlayView` (horizontal plane): placing by hand before the first placement.
-            if (model.canShowCamera && model.showsFloorCoaching && model.session.manifest != null) {
+            // As on iOS, also while the model loads (the anchoring starts manual, without plates).
+            if (model.canShowCamera && model.showsFloorCoaching) {
                 FloorCoachingCard(Modifier.align(Alignment.Center))
             }
 

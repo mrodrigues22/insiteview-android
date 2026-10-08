@@ -232,8 +232,12 @@ class PointsAlignment(
         if (!canMark) return
         markProblem = null
         capturing = true
-        val mark = view.markCorner()
-        capturing = false
+        // Cleared even when the panel's scope is cancelled mid-capture (iOS's `Task` outlives the view).
+        val mark = try {
+            view.markCorner()
+        } finally {
+            capturing = false
+        }
         if (mark == null) {
             markProblem = MarkProblem.UNSTEADY
             return

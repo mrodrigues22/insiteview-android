@@ -58,6 +58,7 @@ import androidx.core.content.ContextCompat
 import com.getinsiteview.ar.ARAlignmentScene
 import com.getinsiteview.ar.ARAlignmentView
 import com.getinsiteview.design.Palette
+import com.getinsiteview.features.ar.IntHolder
 import com.getinsiteview.features.ar.PointsCrosshair
 import com.getinsiteview.modelkit.ar.CrosshairState
 import com.getinsiteview.modelkit.ar.TrackingStatus
@@ -181,7 +182,7 @@ class MarkingTestModel(context: Context) {
             position = mark?.let { listOf(it.position.x, it.position.y, it.position.z) },
             seconds = (System.nanoTime() - startedAt) / 1e9,
             target = target,
-            tracking = tracking.name.lowercase(),
+            tracking = tracking.swiftName,
         )
         copied = false
     }
@@ -298,7 +299,7 @@ private fun MarkingTestContent(onClose: () -> Unit) {
                 CloseButton(onClose)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "Tracking: ${model.tracking.name.lowercase()}",
+                    "Tracking: ${model.tracking.swiftName}",
                     fontSize = 12.sp,
                     color = Palette.ink,
                     modifier = Modifier.background(Palette.surface.copy(alpha = 0.85f), RoundedCornerShape(50)).padding(8.dp),
@@ -326,9 +327,12 @@ private fun Panel(model: MarkingTestModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
+    // iOS `.sensoryFeedback(.impact, trigger: entries.count)`: on each change (a mark, a miss, an undo).
     val count = model.entries.size
+    val lastCount = remember { IntHolder(count) }
     LaunchedEffect(count) {
-        if (count > 0) haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+        if (count != lastCount.value) haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+        lastCount.value = count
     }
     Column(
         Modifier
@@ -385,3 +389,7 @@ private fun line(row: MarkingTestModel.Row): String {
 }
 
 private fun millimetres(metres: Double): String = "${(metres * 1000).roundToLong()} mm"
+
+/** The status as iOS's `String(describing:)` writes it ("excessiveMotion"), so reports from both apps compare. */
+internal val TrackingStatus.swiftName: String
+    get() = name.lowercase().split('_').let { words -> words.first() + words.drop(1).joinToString("") { it.replaceFirstChar(Char::uppercaseChar) } }

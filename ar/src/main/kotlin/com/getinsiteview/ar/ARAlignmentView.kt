@@ -135,7 +135,7 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
     private val discNodes = ArrayList<Node>()
 
     init {
-        hasLiDAR = hasLiDAR || hasDepthCamera(appContext)
+        hasLiDAR(appContext)
     }
 
     override val hasDepthSensor: Boolean get() = hasLiDAR
@@ -216,6 +216,7 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
     internal fun configureNewSession(session: Session, config: Config) {
         val toF = hasDepthCamera(appContext)
         hasLiDAR = toF && session.isDepthModeSupported(Config.DepthMode.RAW_DEPTH_ONLY)
+        confirmedBySession = true
         depthEnabled = hasLiDAR && session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)
         config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
         databaseNames = null
@@ -392,8 +393,12 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         rootDetaching()
         val root = scene?.root ?: return
         val container = container
-        if (container == null || root.parent !== container) return
-        root.parent = null
+        // The AR scene may have gone first (Compose disposes it before the screen's own effect):
+        // `containerDetached` already took the root off. Only a root another view has taken since
+        // is left alone.
+        val parent = root.parent
+        if (parent != null && parent !== container) return
+        if (parent != null) root.parent = null
         root.transform = Mat4()
         root.isVisible = true
     }
@@ -678,9 +683,13 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         var hasLiDAR: Boolean = false
             private set
 
-        /** The camera side of [hasLiDAR], without a session. */
+        /** An AR session has answered ARCore's side of [hasLiDAR]: the camera alone no longer decides. */
+        @Volatile
+        private var confirmedBySession = false
+
+        /** [hasLiDAR], from the camera alone until an AR session has confirmed it. */
         fun hasLiDAR(context: Context): Boolean {
-            if (!hasLiDAR && hasDepthCamera(context.applicationContext)) hasLiDAR = true
+            if (!confirmedBySession) hasLiDAR = hasDepthCamera(context.applicationContext)
             return hasLiDAR
         }
 

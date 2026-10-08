@@ -545,4 +545,40 @@ class ARAlignmentLogicTest {
         view.frame()
         assertNull(view.proximityCamera)
     }
+
+    @Test
+    @DisplayName("A capture cancelled with its caller doesn't block the next one")
+    fun `A capture cancelled with its caller doesn't block the next one`() = runTest {
+        val view = running()
+        view.floor(-1.4)
+        view.startMarking()
+        view.frame(dt = 0.1)
+        assertEquals(CrosshairState.READY, view.crosshair)
+        val cancelled = async { view.markCorner() }
+        runCurrent()
+        repeat(3) { view.frame() }
+        cancelled.cancel()
+        runCurrent()
+        val mark = async { view.markCorner() }
+        runCurrent()
+        repeat(10) { view.frame() }
+        advanceTimeBy(MarkCapture.CAPTURE_DURATION_MILLIS + 1)
+        assertNotNull(mark.await(), "a new capture starts")
+        assertEquals(1, view.discs.size)
+    }
+
+    @Test
+    @DisplayName("Placing on a depth estimate before a plane hides the floor coaching")
+    fun `Placing on a depth estimate before a plane hides the floor coaching`() {
+        val view = running()
+        assertTrue(view.coachingAllowed && view.showsCoaching)
+        view.floorHitPoint = Vec3(0.0, -1.4, -2.0)
+        view.frame()
+        assertTrue(view.place(0.0, 0.0))
+        assertFalse(view.hasHorizontalPlane)
+        assertFalse(view.coachingAllowed, "a placement exists")
+        assertFalse(view.showsCoaching)
+        view.reset()
+        assertTrue(view.coachingAllowed && view.showsCoaching, "Place again: coaching until the floor is found")
+    }
 }

@@ -19,6 +19,7 @@ import com.getinsiteview.modelkit.geometry.Vec3
 import com.getinsiteview.modelkit.geometry.YawTransform
 import com.getinsiteview.modelkit.intersectFloor
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 
 /**
@@ -160,7 +161,13 @@ abstract class ARAlignmentLogic(
         protected set(value) {
             val old = field
             field = value
-            if (value != old) onStateChange?.invoke(value)
+            if (value != old) {
+                onStateChange?.invoke(value)
+                // The floor coaching is for placing before a placement: a tap that places on a
+                // depth estimate (no plane yet) mustn't leave it over the model. iOS re-reads the
+                // gate at fewer points and lets ARKit's own goal hide the overlay.
+                updateCoachingOverlay()
+            }
         }
 
     var tracking: TrackingStatus = TrackingStatus.INITIALIZING
@@ -638,7 +645,14 @@ abstract class ARAlignmentLogic(
         if (!isAiming || capture != null || !crosshair.canMark) return null
         val mine = MarkCapture()
         capture = mine
-        delay(MarkCapture.CAPTURE_DURATION_MILLIS)
+        try {
+            delay(MarkCapture.CAPTURE_DURATION_MILLIS)
+        } catch (e: CancellationException) {
+            // The caller's scope went (its panel left the screen): a capture left behind would
+            // refuse every later one and keep the crosshair updating every frame.
+            if (capture === mine) capture = null
+            throw e
+        }
         val stillMine = capture === mine
         if (stillMine) capture = null
         // Cleared meanwhile (the crosshair was hidden): nothing was captured.
