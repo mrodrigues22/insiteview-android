@@ -114,6 +114,12 @@ ARKit → ARCore mapping (each line is a decision; device checks in `docs/device
 | `.searchable` search bars | A search field at the top of the list | Compose has no navigation-bar search |
 | Swipe a building to reveal a star | A full swipe toggles the favourite | Material's swipe-to-dismiss; the empty-state text is unchanged |
 | Equipment rows: swipe for "Locate in AR" | An inline locate button | Same reason |
+| Selection highlight glows (emissive) | The accent colour without glow | SceneView's colour materials have no emissive parameter |
+| Long diagonal runs picked by their convex hull | Picked by their enlarged box | Filament keeps no CPU copy of meshes |
+| VoiceOver steps the See inside slider between detents | TalkBack adjusts it continuously | Material3's slider semantics |
+| A hot phone switches to a cooler camera format at once | Only when the AR session starts | ARCore must pause to change it, which would lose the alignment |
+| ARKit tracks one plate image at a time | ARCore may track several | Platform; only FULL_TRACKING poses feed the smoother |
+| Scanner without camera access: a message | The message plus "Allow the camera" / "Open settings" | Android lets the app ask again |
 | AR as a full-screen cover | A navigation destination | Navigation Compose; the scene claim works the same |
 | ARKit is always present | An ARCore check first (install from Play, or "AR isn't available on this phone") | ARCore is a separate service on Android |
 | iPhone wording ("on any iPhone", "your iPhone") | "phone" | Android-only strings in `strings_android.xml` / `strings_app.xml` |
