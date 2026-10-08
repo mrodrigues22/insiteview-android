@@ -113,7 +113,7 @@ ARKit → ARCore mapping (each line is a decision; device checks in `docs/device
 | Camera permission (`restricted`) | Android has no restricted state; "Don't ask again" maps to `CameraDenied(canOpenSettings = true)`. |
 | `.searchable` search bars | A search field at the top of the list | Compose has no navigation-bar search |
 | Swipe a building to reveal a star | A full swipe toggles the favourite | Material's swipe-to-dismiss; the empty-state text is unchanged |
-| Object card over the 3D viewer at medium height (model still touchable) | A modal bottom sheet | Material3's sheet is modal |
+| Equipment rows: swipe for "Locate in AR" | An inline locate button | Same reason |
 | AR as a full-screen cover | A navigation destination | Navigation Compose; the scene claim works the same |
 | ARKit is always present | An ARCore check first (install from Play, or "AR isn't available on this phone") | ARCore is a separate service on Android |
 | iPhone wording ("on any iPhone", "your iPhone") | "phone" | Android-only strings in `strings_android.xml` / `strings_app.xml` |
