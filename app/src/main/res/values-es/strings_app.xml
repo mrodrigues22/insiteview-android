@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android-only strings of the app module (no iOS catalog key, or the iOS text names iOS).
+     Strings shared with iOS are in :features (com.getinsiteview.features.R). Keep the three locales in step. -->
+<resources>
+    <!-- Sign-in sheet: Apple through the web sign-in (iOS shows Apple's native "Continue with Apple" button). -->
+    <string name="app_continue_with_apple">Continuar con Apple</string>
+    <!-- Sign-in sheet subtitle (save building). iOS says "on any iPhone". -->
+    <string name="app_a_free_account_keeps_your_buildings_on_any_phone">Una cuenta gratuita mantiene tus inmuebles en un solo lugar, en cualquier teléfono.</string>
+    <!-- Search tab: nothing found (iOS ContentUnavailableView.search). Placeholder: the query. -->
+    <string name="app_no_results_for_x">No hay resultados para “%s”</string>
+    <!-- Search tab: below "No results" (iOS ContentUnavailableView.search). -->
+    <string name="app_check_the_spelling_or_try_a_new_search">Revisa la ortografía o intenta una nueva búsqueda.</string>
+    <!-- QR scanner without camera permission: opens the app's system settings. -->
+    <string name="app_open_settings_android">Abrir configuración</string>
+    <!-- Search tab: clears the search box (accessibility label). -->
+    <string name="app_clear_search">Borrar búsqueda</string>
+    <!-- Email sign-in: back to the sign-in options (accessibility label). -->
+    <string name="app_back">Atrás</string>
+</resources>

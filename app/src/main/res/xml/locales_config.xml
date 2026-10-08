@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's languages for the per-app language setting (Android 13+, Profile → Language).
+     Same set as src/messages on the web and the iOS String Catalog. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="pt-BR" />
+    <locale android:name="es" />
+</locale-config>

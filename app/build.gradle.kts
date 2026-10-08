@@ -4,6 +4,8 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    // Type-safe Navigation routes (the tabs' start destinations).
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 // Build types mirror the iOS configurations (Config/*.xcconfig on iOS, docs/PLAN.md §1). Until a
@@ -76,6 +78,7 @@ android {
         buildConfig = true
     }
     packaging { jniLibs { useLegacyPackaging = false } }
+    testOptions { unitTests.isReturnDefaultValues = true }
 }
 
 
@@ -101,4 +104,10 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlin.test)
+    testRuntimeOnly(libs.junit.launcher)
 }
+
+tasks.withType<Test>().configureEach { useJUnitPlatform() }
