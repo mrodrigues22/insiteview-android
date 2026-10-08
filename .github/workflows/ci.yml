@@ -1,6 +1,7 @@
 # Android CI (docs/PLAN.md §4). The JVM modules' tests, then every Android module: build,
-# unit tests and lint. Runs on every push so Claude Code sessions (which can't reach Google's
-# Maven) see the Android build here.
+# unit tests and lint, plus an unsigned release build (R8 shrinking catches missing keep rules).
+# Runs on every push so Claude Code sessions (which can't reach Google's Maven) see the Android
+# build here.
 name: CI
 
 on:
@@ -32,7 +33,7 @@ jobs:
       - name: Android build, unit tests and lint
         run: |
           set -o pipefail
-          ./gradlew assembleDebug testDebugUnitTest lintDebug --continue 2>&1 | tee build.log
+          ./gradlew assembleDebug testDebugUnitTest lintDebug :app:assembleRelease --continue 2>&1 | tee build.log
 
       # A short list at the end of the log: compiler errors, failed tasks and tests.
       - name: Error summary
