@@ -601,6 +601,7 @@ class BuildingSession(
      * The See inside slider (IOS-M2-06): systems opacity `min(1, 2s)`, architecture
      * `max(0, 2s − 1)`; architecture is on in AR only while it's visible.
      */
+    @JvmName("updateSeeInside") // the property's private setter takes `setSeeInside` on the JVM
     fun setSeeInside(value: Double) {
         seeInside = value
         var filters = SeeInside.apply(value, to = arFilters)

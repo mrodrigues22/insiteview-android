@@ -30,7 +30,15 @@ jobs:
         run: ./gradlew :core:test :modelkit:test :api:test --continue
 
       - name: Android build, unit tests and lint
-        run: ./gradlew assembleDebug testDebugUnitTest lintDebug --continue
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug testDebugUnitTest lintDebug --continue 2>&1 | tee build.log
+
+      # A short list at the end of the log: compiler errors, failed tasks and tests.
+      - name: Error summary
+        if: failure()
+        run: |
+          grep -E "^e: |^w: .*(deprecated|unchecked)|> Task .* FAILED|FAILED$|What went wrong|Lint found|tests completed" build.log | sed 's#file:///home/runner/work/insiteview-android/insiteview-android/##' | head -150 || true
 
       - name: Test reports
         if: failure()
