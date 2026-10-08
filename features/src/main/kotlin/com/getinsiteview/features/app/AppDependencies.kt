@@ -72,6 +72,8 @@ import okhttp3.OkHttpClient
  * @param applicationScope process-wide work (analytics timer, flushes, the account's updates).
  */
 class AppDependencies(
+    /** The application context: the scene's material and model loaders need one. */
+    val applicationContext: Context,
     val configuration: AppConfiguration,
     val deviceID: String,
     tokenStore: TokenStore,
@@ -207,6 +209,7 @@ class AppDependencies(
                     store.getString(UNIT_SYSTEM_KEY)?.let(UnitSystem::fromRaw)
             }
             return AppDependencies(
+                applicationContext = app,
                 configuration = configuration,
                 deviceID = deviceID,
                 tokenStore = KeystoreTokenStore(store),

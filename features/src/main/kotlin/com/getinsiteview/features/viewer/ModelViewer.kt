@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import com.getinsiteview.modelkit.geometry.Bounds
 import com.getinsiteview.scene.BuildingScene
 import com.getinsiteview.scene.OrbitViewer
-import com.getinsiteview.scene.rememberOrbitViewerState
+import com.getinsiteview.scene.OrbitViewerView
 
 /**
  * Compose wrapper of `:scene`'s orbit viewer (iOS `ModelViewer`, a `UIViewRepresentable` of
@@ -36,20 +36,21 @@ fun ModelViewer(
     isInteractive: Boolean = true,
     onTap: (String?) -> Unit = {},
 ) {
-    val state = rememberOrbitViewerState()
+    val state = remember { OrbitViewerView() }
+    val currentOnTap by rememberUpdatedState(onTap)
     // iOS's coordinator: the requests already handled.
     var handledFit by remember { mutableIntStateOf(fitRequest) }
     var handledFocus by remember { mutableIntStateOf(focusRequest) }
     val currentFocusBounds by rememberUpdatedState(focusBounds)
 
-    OrbitViewer(
-        scene = scene,
-        state = state,
-        attached = isOwner,
-        isInteractive = isInteractive,
-        onTap = onTap,
-        modifier = modifier,
-    )
+    state.isInteractive = isInteractive
+    state.onTap = { node -> currentOnTap(scene.elementID(node)) }
+    // The root moves into this viewer while it holds the scene claim; the other one (landing
+    // preview or 3D viewer) shows an empty scene meanwhile, as on iOS.
+    LaunchedEffect(isOwner, scene) {
+        if (isOwner) state.attach(scene)
+    }
+    OrbitViewer(view = state, modifier = modifier)
 
     LaunchedEffect(isOwner, revision, fitRequest, focusRequest) {
         if (!isOwner) return@LaunchedEffect

@@ -192,7 +192,7 @@ class BuildingSession(
         private set
 
     /** The building's Filament entities under one root, shared by the 3D viewer and AR. */
-    val scene = BuildingScene()
+    val scene = BuildingScene(dependencies.applicationContext)
 
     private val connection = BuildingConnection(
         access = access, api = dependencies.api, deviceId = dependencies.deviceID, platform = dependencies.platform,
