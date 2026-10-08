@@ -19,4 +19,9 @@ dependencies {
     testRuntimeOnly(libs.junit.launcher)
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    // ApiContractTest checks the hand-written models against the committed spec.
+    systemProperty("iv.openapi", rootProject.file("openapi/openapi.json").absolutePath)
+    inputs.file(rootProject.file("openapi/openapi.json"))
+}
