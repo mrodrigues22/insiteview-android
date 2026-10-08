@@ -1,0 +1,170 @@
+{
+ "schema": 1,
+ "building": {
+  "code": "TEST01",
+  "name": "Test room"
+ },
+ "versionId": "01926f3a-7c1e-7b2d-9a41-3c5e8f0a1b2c",
+ "units": "m",
+ "upAxis": "Y",
+ "origin": {
+  "offset": [
+   2.0,
+   1.75,
+   0.0
+  ]
+ },
+ "bounds": {
+  "min": [
+   -2.15,
+   -0.2,
+   -1.9
+  ],
+  "max": [
+   2.15,
+   2.6,
+   1.9
+  ]
+ },
+ "storeys": [
+  {
+   "id": "e614d613568044166b4fe08af3b18d142",
+   "name": "Level 1",
+   "elevation": 0.0,
+   "order": 0
+  }
+ ],
+ "spaces": [
+  {
+   "id": "ed3083b6225a94e56856253148965de2f",
+   "name": "R1",
+   "longName": "Test room",
+   "storeyId": "e614d613568044166b4fe08af3b18d142",
+   "areaM2": 14.0,
+   "floorY": 0.0,
+   "outline": [[-2.0, -1.75], [-2.0, 1.75], [2.0, 1.75], [2.0, -1.75]]
+  }
+ ],
+ "systems": [
+  {
+   "key": "architecture",
+   "elementCount": 6,
+   "subsystems": []
+  },
+  {
+   "key": "electrical",
+   "elementCount": 4,
+   "subsystems": [
+    "power",
+    "lighting"
+   ]
+  },
+  {
+   "key": "plumbing",
+   "elementCount": 2,
+   "subsystems": [
+    "cold_water"
+   ]
+  }
+ ],
+ "chunks": [
+  {
+   "key": "architecture",
+   "system": "architecture",
+   "storey": null,
+   "glb": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/architecture.glb?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 4444,
+    "sha256": "af9fc4bb04d687440a31e2acf88346e6c84950321c92037ab04e0f8a01a168f0",
+    "encoding": "gzip"
+   },
+   "usdz": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/architecture.usdz?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 3025,
+    "sha256": "11422bb2e7a316b38d9094103db7df091c9f9914635ca1db7415330d8e0e120d",
+    "encoding": "gzip"
+   },
+   "meta": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/architecture.meta.json?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 1271,
+    "sha256": "59e0313bcaf7eca91554e3f9371a8a88c31f13497f194052d42791c60080b0ce",
+    "encoding": "gzip"
+   }
+  },
+  {
+   "key": "electrical",
+   "system": "electrical",
+   "storey": null,
+   "glb": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/electrical.glb?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 3400,
+    "sha256": "e44af7fbfe7d0c77fdc34903db94327cadacd70fc6a4ca0b68b469a1c2c0da27",
+    "encoding": "gzip"
+   },
+   "usdz": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/electrical.usdz?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 2745,
+    "sha256": "2b639f4e6c1095afe222db9f95dcfa5b289eda93acf5c9add069cfb80f8d594b",
+    "encoding": "gzip"
+   },
+   "meta": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/electrical.meta.json?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 856,
+    "sha256": "622767e38204f3d00b85134693daf5abd8213bf57a85df257b7d02ef13b8c60b",
+    "encoding": "gzip"
+   }
+  },
+  {
+   "key": "plumbing",
+   "system": "plumbing",
+   "storey": null,
+   "glb": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/plumbing.glb?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 2740,
+    "sha256": "5e36522ceec8099f86e3f5c902e12dc38feff9c53faf792ebce01ecafdc0082e",
+    "encoding": "gzip"
+   },
+   "usdz": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/plumbing.usdz?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 3441,
+    "sha256": "4618c047c74511e37ad7be49b2e69c0f691f0601f8a36a72e1c17ac15880b023",
+    "encoding": "gzip"
+   },
+   "meta": {
+    "url": "https://storage.test/versions/01926f3a/r1/chunks/plumbing.meta.json?X-Amz-Expires=900&X-Amz-Signature=abc",
+    "bytes": 381,
+    "sha256": "5e0be91048fa54936343cb5e3ad709e94392e491c0bd4c40a11f1fb05cff249c",
+    "encoding": "gzip"
+   }
+  }
+ ],
+ "plates": [
+  {
+   "number": 1,
+   "label": "Front door",
+   "position": [
+    0.0,
+    1.5,
+    1.75
+   ],
+   "normal": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "up": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "sizeMm": 50,
+   "imageUrl": "https://api.staging.getinsiteview.com/v1/plates/01926f3a-0000-7000-8000-000000000001/image.png"
+  }
+ ],
+ "stats": {
+  "elements": 12,
+  "floorAreaM2": 14.0
+ },
+ "thumbnailUrl": null,
+ "urlsExpireAt": "2026-10-01T12:15:00.1234567+00:00"
+}

@@ -8,6 +8,11 @@ import kotlin.math.sqrt
  * vectors are element-wise).
  */
 data class Vec3(val x: Double, val y: Double, val z: Double) {
+    /** IEEE equality, as SIMD's `==`: `-0.0 == 0.0` and NaN is never equal (a data class compares bit patterns). */
+    override fun equals(other: Any?): Boolean = other is Vec3 && x == other.x && y == other.y && z == other.z
+
+    override fun hashCode(): Int = ((x + 0.0).hashCode() * 31 + (y + 0.0).hashCode()) * 31 + (z + 0.0).hashCode()
+
     operator fun plus(o: Vec3) = Vec3(x + o.x, y + o.y, z + o.z)
     operator fun minus(o: Vec3) = Vec3(x - o.x, y - o.y, z - o.z)
     operator fun times(o: Vec3) = Vec3(x * o.x, y * o.y, z * o.z)
@@ -32,6 +37,13 @@ data class Vec3(val x: Double, val y: Double, val z: Double) {
         val zero = Vec3(0.0, 0.0, 0.0)
         val one = Vec3(1.0, 1.0, 1.0)
 
+        /** `[x, y, z]` → vector; missing components are 0 (IVModelKit's `SIMD3(components:)`). */
+        fun of(components: List<Double>) = Vec3(
+            components.getOrElse(0) { 0.0 },
+            components.getOrElse(1) { 0.0 },
+            components.getOrElse(2) { 0.0 },
+        )
+
         /** SIMD's `SIMD3(repeating:)`. */
         fun repeating(v: Double) = Vec3(v, v, v)
 
@@ -45,6 +57,11 @@ operator fun Double.times(v: Vec3) = v * this
 
 /** A 2D vector of doubles (`SIMD2<Double>`): floor-plane points (x, z) and outlines. */
 data class Vec2(val x: Double, val y: Double) {
+    /** IEEE equality, as SIMD's `==` (see [Vec3.equals]). */
+    override fun equals(other: Any?): Boolean = other is Vec2 && x == other.x && y == other.y
+
+    override fun hashCode(): Int = (x + 0.0).hashCode() * 31 + (y + 0.0).hashCode()
+
     operator fun plus(o: Vec2) = Vec2(x + o.x, y + o.y)
     operator fun minus(o: Vec2) = Vec2(x - o.x, y - o.y)
     operator fun times(o: Vec2) = Vec2(x * o.x, y * o.y)
@@ -63,6 +80,10 @@ data class Vec2(val x: Double, val y: Double) {
     companion object {
         val zero = Vec2(0.0, 0.0)
         fun repeating(v: Double) = Vec2(v, v)
+
+        /** SIMD's `pointwiseMin`/`pointwiseMax`. */
+        fun min(a: Vec2, b: Vec2) = Vec2(kotlin.math.min(a.x, b.x), kotlin.math.min(a.y, b.y))
+        fun max(a: Vec2, b: Vec2) = Vec2(kotlin.math.max(a.x, b.x), kotlin.math.max(a.y, b.y))
     }
 }
 

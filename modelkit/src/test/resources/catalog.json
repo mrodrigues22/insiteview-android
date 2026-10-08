@@ -1,0 +1,830 @@
+{
+  "version": 1,
+  "systems": [
+    {
+      "key": "architecture",
+      "color": "#D9D4CB",
+      "names": {
+        "en": "Architecture",
+        "pt-BR": "Arquitetura",
+        "es": "Arquitectura"
+      },
+      "subsystems": []
+    },
+    {
+      "key": "structure",
+      "color": "#A0A7AD",
+      "names": {
+        "en": "Structure",
+        "pt-BR": "Estrutura",
+        "es": "Estructura"
+      },
+      "subsystems": []
+    },
+    {
+      "key": "electrical",
+      "color": "#F2B72E",
+      "names": {
+        "en": "Electrical",
+        "pt-BR": "Elétrica",
+        "es": "Electricidad"
+      },
+      "subsystems": [
+        {
+          "key": "power",
+          "color": "#F2B72E",
+          "names": {
+            "en": "Power",
+            "pt-BR": "Tomadas e força",
+            "es": "Fuerza"
+          }
+        },
+        {
+          "key": "lighting",
+          "color": "#F7D774",
+          "names": {
+            "en": "Lighting",
+            "pt-BR": "Iluminação",
+            "es": "Iluminación"
+          }
+        },
+        {
+          "key": "panels",
+          "color": "#C98A00",
+          "names": {
+            "en": "Panels",
+            "pt-BR": "Quadros",
+            "es": "Tableros"
+          }
+        }
+      ]
+    },
+    {
+      "key": "plumbing",
+      "color": "#6AA3F0",
+      "names": {
+        "en": "Plumbing",
+        "pt-BR": "Hidráulica",
+        "es": "Fontanería"
+      },
+      "subsystems": [
+        {
+          "key": "cold_water",
+          "color": "#6AA3F0",
+          "names": {
+            "en": "Cold water",
+            "pt-BR": "Água fria",
+            "es": "Agua fría"
+          }
+        },
+        {
+          "key": "hot_water",
+          "color": "#F4A261",
+          "names": {
+            "en": "Hot water",
+            "pt-BR": "Água quente",
+            "es": "Agua caliente"
+          }
+        },
+        {
+          "key": "drainage",
+          "color": "#9C7B55",
+          "names": {
+            "en": "Waste and vent",
+            "pt-BR": "Esgoto e ventilação",
+            "es": "Desagüe y ventilación"
+          }
+        },
+        {
+          "key": "stormwater",
+          "color": "#4FC1CB",
+          "names": {
+            "en": "Stormwater",
+            "pt-BR": "Águas pluviais",
+            "es": "Aguas pluviales"
+          }
+        },
+        {
+          "key": "fixtures",
+          "color": "#8FB8F5",
+          "names": {
+            "en": "Fixtures",
+            "pt-BR": "Louças e metais",
+            "es": "Aparatos sanitarios"
+          }
+        }
+      ]
+    },
+    {
+      "key": "gas",
+      "color": "#EE6A60",
+      "names": {
+        "en": "Gas",
+        "pt-BR": "Gás",
+        "es": "Gas"
+      },
+      "subsystems": []
+    },
+    {
+      "key": "hvac",
+      "color": "#5FC28A",
+      "names": {
+        "en": "Air conditioning",
+        "pt-BR": "Ar-condicionado",
+        "es": "Climatización"
+      },
+      "subsystems": [
+        {
+          "key": "supply",
+          "color": "#5FC28A",
+          "names": {
+            "en": "Supply air",
+            "pt-BR": "Insuflamento",
+            "es": "Impulsión"
+          }
+        },
+        {
+          "key": "return",
+          "color": "#3E9A68",
+          "names": {
+            "en": "Return air",
+            "pt-BR": "Retorno",
+            "es": "Retorno"
+          }
+        },
+        {
+          "key": "exhaust",
+          "color": "#9BD8B4",
+          "names": {
+            "en": "Exhaust",
+            "pt-BR": "Exaustão",
+            "es": "Extracción"
+          }
+        },
+        {
+          "key": "refrigerant",
+          "color": "#2E8B57",
+          "names": {
+            "en": "Refrigerant lines",
+            "pt-BR": "Linhas frigoríficas",
+            "es": "Líneas de refrigerante"
+          }
+        },
+        {
+          "key": "equipment",
+          "color": "#7ED3A2",
+          "names": {
+            "en": "Equipment",
+            "pt-BR": "Equipamentos",
+            "es": "Equipos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "fire",
+      "color": "#E0569B",
+      "names": {
+        "en": "Fire protection",
+        "pt-BR": "Incêndio",
+        "es": "Protección contra incendios"
+      },
+      "subsystems": [
+        {
+          "key": "sprinklers",
+          "color": "#E0569B",
+          "names": {
+            "en": "Sprinklers",
+            "pt-BR": "Sprinklers",
+            "es": "Rociadores"
+          }
+        },
+        {
+          "key": "alarms",
+          "color": "#F28DBE",
+          "names": {
+            "en": "Alarms",
+            "pt-BR": "Alarmes",
+            "es": "Alarmas"
+          }
+        }
+      ]
+    },
+    {
+      "key": "data",
+      "color": "#A77BF3",
+      "names": {
+        "en": "Internet and data",
+        "pt-BR": "Internet e dados",
+        "es": "Internet y datos"
+      },
+      "subsystems": []
+    },
+    {
+      "key": "other",
+      "color": "#8E9AA0",
+      "names": {
+        "en": "Other",
+        "pt-BR": "Outros",
+        "es": "Otros"
+      },
+      "subsystems": []
+    }
+  ],
+  "kinds": [
+    {
+      "key": "outlet",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Outlet",
+        "pt-BR": "Tomada",
+        "es": "Toma de corriente"
+      }
+    },
+    {
+      "key": "switch",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Switch",
+        "pt-BR": "Interruptor",
+        "es": "Interruptor"
+      }
+    },
+    {
+      "key": "panel",
+      "system": "electrical",
+      "equipment": true,
+      "names": {
+        "en": "Electrical panel",
+        "pt-BR": "Quadro de distribuição",
+        "es": "Tablero eléctrico"
+      }
+    },
+    {
+      "key": "light",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Light",
+        "pt-BR": "Luminária",
+        "es": "Luminaria"
+      }
+    },
+    {
+      "key": "cable",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Cable",
+        "pt-BR": "Cabo",
+        "es": "Cable"
+      }
+    },
+    {
+      "key": "conduit",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Conduit",
+        "pt-BR": "Eletroduto",
+        "es": "Conducto eléctrico"
+      }
+    },
+    {
+      "key": "junction_box",
+      "system": "electrical",
+      "equipment": false,
+      "names": {
+        "en": "Junction box",
+        "pt-BR": "Caixa de passagem",
+        "es": "Caja de paso"
+      }
+    },
+    {
+      "key": "meter",
+      "system": "electrical",
+      "equipment": true,
+      "names": {
+        "en": "Meter",
+        "pt-BR": "Medidor",
+        "es": "Medidor"
+      }
+    },
+    {
+      "key": "pipe",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Pipe",
+        "pt-BR": "Tubo",
+        "es": "Tubería"
+      }
+    },
+    {
+      "key": "pipe_fitting",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Pipe fitting",
+        "pt-BR": "Conexão",
+        "es": "Accesorio de tubería"
+      }
+    },
+    {
+      "key": "valve",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Valve",
+        "pt-BR": "Registro",
+        "es": "Válvula"
+      }
+    },
+    {
+      "key": "faucet",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Faucet",
+        "pt-BR": "Torneira",
+        "es": "Grifo"
+      }
+    },
+    {
+      "key": "toilet",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Toilet",
+        "pt-BR": "Vaso sanitário",
+        "es": "Inodoro"
+      }
+    },
+    {
+      "key": "sink",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Sink",
+        "pt-BR": "Pia",
+        "es": "Lavabo"
+      }
+    },
+    {
+      "key": "shower",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Shower",
+        "pt-BR": "Chuveiro",
+        "es": "Ducha"
+      }
+    },
+    {
+      "key": "drain",
+      "system": "plumbing",
+      "equipment": false,
+      "names": {
+        "en": "Drain",
+        "pt-BR": "Ralo",
+        "es": "Desagüe"
+      }
+    },
+    {
+      "key": "water_heater",
+      "system": "plumbing",
+      "equipment": true,
+      "names": {
+        "en": "Water heater",
+        "pt-BR": "Aquecedor de água",
+        "es": "Calentador de agua"
+      }
+    },
+    {
+      "key": "water_tank",
+      "system": "plumbing",
+      "equipment": true,
+      "names": {
+        "en": "Water tank",
+        "pt-BR": "Caixa d'água",
+        "es": "Tanque de agua"
+      }
+    },
+    {
+      "key": "pump",
+      "system": "plumbing",
+      "equipment": true,
+      "names": {
+        "en": "Pump",
+        "pt-BR": "Bomba",
+        "es": "Bomba"
+      }
+    },
+    {
+      "key": "duct",
+      "system": "hvac",
+      "equipment": false,
+      "names": {
+        "en": "Duct",
+        "pt-BR": "Duto",
+        "es": "Conducto"
+      }
+    },
+    {
+      "key": "duct_fitting",
+      "system": "hvac",
+      "equipment": false,
+      "names": {
+        "en": "Duct fitting",
+        "pt-BR": "Conexão de duto",
+        "es": "Accesorio de conducto"
+      }
+    },
+    {
+      "key": "air_terminal",
+      "system": "hvac",
+      "equipment": false,
+      "names": {
+        "en": "Air vent",
+        "pt-BR": "Difusor",
+        "es": "Rejilla"
+      }
+    },
+    {
+      "key": "ac_unit",
+      "system": "hvac",
+      "equipment": true,
+      "names": {
+        "en": "Air conditioner",
+        "pt-BR": "Ar-condicionado",
+        "es": "Aire acondicionado"
+      }
+    },
+    {
+      "key": "fan",
+      "system": "hvac",
+      "equipment": true,
+      "names": {
+        "en": "Fan",
+        "pt-BR": "Exaustor",
+        "es": "Extractor"
+      }
+    },
+    {
+      "key": "boiler",
+      "system": "hvac",
+      "equipment": true,
+      "names": {
+        "en": "Boiler",
+        "pt-BR": "Caldeira",
+        "es": "Caldera"
+      }
+    },
+    {
+      "key": "chimney",
+      "system": "hvac",
+      "equipment": false,
+      "names": {
+        "en": "Flue",
+        "pt-BR": "Chaminé",
+        "es": "Chimenea"
+      }
+    },
+    {
+      "key": "gas_pipe",
+      "system": "gas",
+      "equipment": false,
+      "names": {
+        "en": "Gas pipe",
+        "pt-BR": "Tubo de gás",
+        "es": "Tubería de gas"
+      }
+    },
+    {
+      "key": "gas_meter",
+      "system": "gas",
+      "equipment": true,
+      "names": {
+        "en": "Gas meter",
+        "pt-BR": "Medidor de gás",
+        "es": "Medidor de gas"
+      }
+    },
+    {
+      "key": "sprinkler",
+      "system": "fire",
+      "equipment": false,
+      "names": {
+        "en": "Sprinkler",
+        "pt-BR": "Sprinkler",
+        "es": "Rociador"
+      }
+    },
+    {
+      "key": "fire_alarm",
+      "system": "fire",
+      "equipment": false,
+      "names": {
+        "en": "Fire alarm",
+        "pt-BR": "Alarme de incêndio",
+        "es": "Alarma de incendio"
+      }
+    },
+    {
+      "key": "extinguisher",
+      "system": "fire",
+      "equipment": true,
+      "names": {
+        "en": "Fire extinguisher",
+        "pt-BR": "Extintor",
+        "es": "Extintor"
+      }
+    },
+    {
+      "key": "data_outlet",
+      "system": "data",
+      "equipment": false,
+      "names": {
+        "en": "Data outlet",
+        "pt-BR": "Ponto de rede",
+        "es": "Toma de datos"
+      }
+    },
+    {
+      "key": "data_cable",
+      "system": "data",
+      "equipment": false,
+      "names": {
+        "en": "Data cable",
+        "pt-BR": "Cabo de rede",
+        "es": "Cable de datos"
+      }
+    },
+    {
+      "key": "wall",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Wall",
+        "pt-BR": "Parede",
+        "es": "Pared"
+      }
+    },
+    {
+      "key": "slab",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Floor slab",
+        "pt-BR": "Laje",
+        "es": "Losa"
+      }
+    },
+    {
+      "key": "roof",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Roof",
+        "pt-BR": "Telhado",
+        "es": "Techo"
+      }
+    },
+    {
+      "key": "door",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Door",
+        "pt-BR": "Porta",
+        "es": "Puerta"
+      }
+    },
+    {
+      "key": "window",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Window",
+        "pt-BR": "Janela",
+        "es": "Ventana"
+      }
+    },
+    {
+      "key": "stair",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Stairs",
+        "pt-BR": "Escada",
+        "es": "Escalera"
+      }
+    },
+    {
+      "key": "railing",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Railing",
+        "pt-BR": "Guarda-corpo",
+        "es": "Barandilla"
+      }
+    },
+    {
+      "key": "covering",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Finish",
+        "pt-BR": "Revestimento",
+        "es": "Revestimiento"
+      }
+    },
+    {
+      "key": "furniture",
+      "system": "architecture",
+      "equipment": false,
+      "names": {
+        "en": "Furniture",
+        "pt-BR": "Móvel",
+        "es": "Mueble"
+      }
+    },
+    {
+      "key": "column",
+      "system": "structure",
+      "equipment": false,
+      "names": {
+        "en": "Column",
+        "pt-BR": "Pilar",
+        "es": "Columna"
+      }
+    },
+    {
+      "key": "beam",
+      "system": "structure",
+      "equipment": false,
+      "names": {
+        "en": "Beam",
+        "pt-BR": "Viga",
+        "es": "Viga"
+      }
+    },
+    {
+      "key": "footing",
+      "system": "structure",
+      "equipment": false,
+      "names": {
+        "en": "Foundation",
+        "pt-BR": "Fundação",
+        "es": "Cimentación"
+      }
+    },
+    {
+      "key": "structural_slab",
+      "system": "structure",
+      "equipment": false,
+      "names": {
+        "en": "Structural slab",
+        "pt-BR": "Laje estrutural",
+        "es": "Losa estructural"
+      }
+    },
+    {
+      "key": "equipment",
+      "system": "other",
+      "equipment": true,
+      "names": {
+        "en": "Equipment",
+        "pt-BR": "Equipamento",
+        "es": "Equipo"
+      }
+    },
+    {
+      "key": "element",
+      "system": "other",
+      "equipment": false,
+      "names": {
+        "en": "Element",
+        "pt-BR": "Elemento",
+        "es": "Elemento"
+      }
+    }
+  ],
+  "properties": [
+    {
+      "key": "circuit",
+      "names": {
+        "en": "Circuit",
+        "pt-BR": "Circuito",
+        "es": "Circuito"
+      }
+    },
+    {
+      "key": "panel",
+      "names": {
+        "en": "Panel",
+        "pt-BR": "Quadro",
+        "es": "Tablero"
+      }
+    },
+    {
+      "key": "voltage",
+      "names": {
+        "en": "Voltage",
+        "pt-BR": "Tensão",
+        "es": "Tensión"
+      }
+    },
+    {
+      "key": "power",
+      "names": {
+        "en": "Power",
+        "pt-BR": "Potência",
+        "es": "Potencia"
+      }
+    },
+    {
+      "key": "current",
+      "names": {
+        "en": "Current",
+        "pt-BR": "Corrente",
+        "es": "Corriente"
+      }
+    },
+    {
+      "key": "diameter",
+      "names": {
+        "en": "Diameter",
+        "pt-BR": "Diâmetro",
+        "es": "Diámetro"
+      }
+    },
+    {
+      "key": "flow",
+      "names": {
+        "en": "Flow",
+        "pt-BR": "Vazão",
+        "es": "Caudal"
+      }
+    },
+    {
+      "key": "material",
+      "names": {
+        "en": "Material",
+        "pt-BR": "Material",
+        "es": "Material"
+      }
+    },
+    {
+      "key": "manufacturer",
+      "names": {
+        "en": "Manufacturer",
+        "pt-BR": "Fabricante",
+        "es": "Fabricante"
+      }
+    },
+    {
+      "key": "model",
+      "names": {
+        "en": "Model",
+        "pt-BR": "Modelo",
+        "es": "Modelo"
+      }
+    },
+    {
+      "key": "serial",
+      "names": {
+        "en": "Serial number",
+        "pt-BR": "Número de série",
+        "es": "Número de serie"
+      }
+    },
+    {
+      "key": "install_date",
+      "names": {
+        "en": "Installed",
+        "pt-BR": "Instalado em",
+        "es": "Instalado"
+      }
+    },
+    {
+      "key": "capacity",
+      "names": {
+        "en": "Capacity",
+        "pt-BR": "Capacidade",
+        "es": "Capacidad"
+      }
+    },
+    {
+      "key": "mark",
+      "names": {
+        "en": "Mark",
+        "pt-BR": "Identificação",
+        "es": "Marca"
+      }
+    }
+  ]
+}
