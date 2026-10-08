@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android-only strings (not in the iOS String Catalog). scripts/xcstrings-to-android.py never touches this file. -->
+<resources>
+    <!-- Top bar back button (content description). -->
+    <string name="back">Atrás</string>
+    <!-- Guest landing: save section body (iOS says "on any iPhone"). -->
+    <string name="save_it_to_a_free_account_on_any_phone">Guárdalo en una cuenta gratuita para encontrarlo de nuevo en Inmuebles, en cualquier teléfono.</string>
+</resources>

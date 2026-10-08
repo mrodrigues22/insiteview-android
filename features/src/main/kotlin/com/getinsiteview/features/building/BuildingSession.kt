@@ -1,6 +1,7 @@
 package com.getinsiteview.features.building
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -159,7 +160,7 @@ class BuildingSession(
         private set
 
     /** The See inside slider (0 Reality · 0.5 Reality + model · 1 Model). */
-    var seeInside by mutableStateOf(SeeInside.defaultValue)
+    var seeInside by mutableDoubleStateOf(SeeInside.defaultValue)
         private set
 
     /** The element "Show in 3D" framed (IOS-M3-05); a room focus clears it. */
@@ -419,7 +420,7 @@ class BuildingSession(
             if (!isActive) return@collect
             handle(event)
         }
-        phase = finalPhase(loadState.models.isEmpty(), loadState.failures.values)
+        phase = BuildingSessionRules.finalPhase(loadState.models.isEmpty(), loadState.failures.values)
     }
 
     private suspend fun handle(event: ChunkEvent) {
@@ -845,7 +846,7 @@ class BuildingSession(
         }
         val result = when (outcome) {
             is BuildingSearchOutcome.Server -> SearchResult(
-                serverSearchRows(outcome.hits, scopeSystems) { index[it]?.subsystem },
+                BuildingSessionRules.serverSearchRows(outcome.hits, scopeSystems) { index[it]?.subsystem },
                 offline = false,
             )
             is BuildingSearchOutcome.Offline -> SearchResult(
@@ -853,7 +854,7 @@ class BuildingSession(
                     SearchRow(
                         id = record.id, isRoom = false, title = displayName(record), system = record.system,
                         subsystem = record.subsystem,
-                        place = placeLine(roomName(record.roomID), storeyName(record.storeyID)),
+                        place = BuildingSessionRules.placeLine(roomName(record.roomID), storeyName(record.storeyID)),
                     )
                 },
                 offline = true,
@@ -966,7 +967,7 @@ class BuildingSession(
             saveState = SaveState.UNKNOWN
             return
         }
-        saveState = saveState(dependencies.myBuildings.building(code)?.via)
+        saveState = BuildingSessionRules.saveState(dependencies.myBuildings.building(code)?.via)
     }
 
     /** Saves it to the signed-in account; it shows up in Buildings. */
@@ -983,46 +984,5 @@ class BuildingSession(
         } catch (_: Exception) {
             SaveState.FAILED
         }
-    }
-
-    internal companion object {
-        /** "Save this building" for how my buildings list it (`null`: not in the list). */
-        fun saveState(via: MyBuildingVia?): SaveState = when (via) {
-            null -> SaveState.NOT_SAVED
-            MyBuildingVia.SAVED -> SaveState.SAVED
-            else -> SaveState.MINE // member, grant, or a way the app doesn't know yet
-        }
-
-        /**
-         * After every file loaded or failed: failed when nothing loaded and something failed
-         * (offline when a file failed for lack of a connection), else ready.
-         */
-        fun finalPhase(noModels: Boolean, failures: Collection<ChunkLoadError>): Phase =
-            if (noModels && failures.isNotEmpty()) {
-                Phase.Failed(if (ChunkLoadError.Offline in failures) GuestProblem.Offline else GuestProblem.Unavailable)
-            } else {
-                Phase.Ready
-            }
-
-        /** "Kitchen · Level 1"; `null` when neither is known. */
-        fun placeLine(room: String?, storey: String?): String? =
-            listOfNotNull(room, storey).joinToString(" · ").ifEmpty { null }
-
-        /**
-         * The server's hits as rows: hits of a system outside the scope are left out (architecture
-         * is always searchable); [subsystem] looks an element's subsystem up in the loaded meta.
-         */
-        fun serverSearchRows(
-            hits: List<com.getinsiteview.api.SearchHit>,
-            scope: Set<String>,
-            subsystem: (String) -> String?,
-        ): List<SearchRow> = hits
-            .filter { hit -> hit.system?.let { it in scope || it == ChunkPlan.architecture } ?: true }
-            .map { hit ->
-                SearchRow(
-                    id = hit.id, isRoom = hit.type == com.getinsiteview.api.SearchHitType.ROOM, title = hit.title,
-                    system = hit.system, subsystem = subsystem(hit.id), place = placeLine(hit.room, hit.storey),
-                )
-            }
     }
 }

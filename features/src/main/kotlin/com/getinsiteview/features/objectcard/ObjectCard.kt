@@ -402,13 +402,13 @@ fun ObjectCardSheet(
         }
     }
 
-    val locateInAR: ((String) -> Unit)? = if (onLocateInAR == null) null else { id -> pending = Pending.LocateInAR(id) }
+    val locateInAR: ((String) -> Unit)? = if (onLocateInAR == null) null else ({ id: String -> pending = Pending.LocateInAR(id) })
     val actions = when (context) {
         ObjectCardContext.AR -> ObjectCardActions(locate = { id -> session.locate(id) }, locatesInPlace = true)
         ObjectCardContext.VIEWER -> ObjectCardActions(locate = locateInAR)
         ObjectCardContext.LIST -> ObjectCardActions(
             locate = locateInAR,
-            showIn3D = if (onShowIn3D == null) null else { id -> pending = Pending.ShowIn3D(id) },
+            showIn3D = if (onShowIn3D == null) null else ({ id: String -> pending = Pending.ShowIn3D(id) }),
         )
     }
     val model = remember(selection) { ObjectCardModel(selection, session) }

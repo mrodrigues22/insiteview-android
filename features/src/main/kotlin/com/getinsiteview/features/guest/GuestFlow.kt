@@ -131,7 +131,7 @@ class GuestFlowModel(
 
     /** A problem from the visit (a revoked link, a paused building) replaces the landing. */
     val problem: GuestProblem?
-        get() = flowProblem(state, session.accessProblem, session.phase, session.isArchitectureReady)
+        get() = GuestFlowRules.problem(state, session.accessProblem, session.phase, session.isArchitectureReady)
 
     suspend fun retry() {
         if (state is State.Problem) load() else session.start()
@@ -143,19 +143,6 @@ class GuestFlowModel(
     }
 
     companion object {
-        /** What replaces the landing: the summary's problem, then access ending, then a failed load before anything showed. */
-        internal fun flowProblem(
-            state: State,
-            accessProblem: GuestProblem?,
-            phase: BuildingSession.Phase,
-            isArchitectureReady: Boolean,
-        ): GuestProblem? {
-            if (state is State.Problem) return state.problem
-            if (accessProblem != null) return accessProblem
-            if (phase is BuildingSession.Phase.Failed && !isArchitectureReady) return phase.problem
-            return null
-        }
-
         fun factory(open: OpenBuilding, dependencies: AppDependencies): ViewModelProvider.Factory = viewModelFactory {
             initializer { GuestFlowModel(open.link, open.elementID, dependencies) }
         }

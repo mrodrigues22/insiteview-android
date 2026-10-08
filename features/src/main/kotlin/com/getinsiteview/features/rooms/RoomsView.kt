@@ -142,23 +142,6 @@ fun RoomsView(session: BuildingSession, navigator: BuildingNavigator, need: Prof
     }
 }
 
-/** Rooms on one storey, in list order. */
-data class StoreyGroup(val storeyID: String?, val rooms: List<RoomEntry>)
-
-/** Consecutive rooms on the same storey (the list is sorted by storey). */
-fun storeyGroups(rooms: List<RoomEntry>): List<StoreyGroup> {
-    val groups = ArrayList<StoreyGroup>()
-    for (room in rooms) {
-        val last = groups.lastOrNull()
-        if (last != null && last.storeyID == room.storeyID) {
-            groups[groups.size - 1] = last.copy(rooms = last.rooms + room)
-        } else {
-            groups.add(StoreyGroup(room.storeyID, listOf(room)))
-        }
-    }
-    return groups
-}
-
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.RoomRow(session: BuildingSession, room: RoomEntry) {
     val dimmed = if (room.elementCount > 0) 1f else 0.6f
