@@ -4,11 +4,16 @@ import com.getinsiteview.core.CatalogColor
 import com.getinsiteview.modelkit.ModelFilters
 import com.getinsiteview.modelkit.scene.GlbMaterial
 import com.google.android.filament.Colors
-import com.google.android.filament.Material
 import com.google.android.filament.MaterialInstance
+import com.google.android.filament.gltfio.MaterialProvider
 import dev.romainguy.kotlin.math.Float4
 import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.material.setBaseColorFactor
 import io.github.sceneview.material.setColor
+import io.github.sceneview.material.setEmissiveFactor
+import io.github.sceneview.material.setEmissiveStrength
+import io.github.sceneview.material.setMetallicFactor
+import io.github.sceneview.material.setRoughnessFactor
 import kotlin.math.roundToInt
 
 /**
@@ -43,17 +48,28 @@ internal class SceneMaterials(private val loader: MaterialLoader) {
 
     /**
      * The brand accent (`--accent`, #E30532) glowing a little (#FF3B4E × 0.8), so the selection reads
-     * against any system colour and in a dark basement. The glow is set when the material has an
-     * emissive parameter.
+     * against any system colour and in a dark basement (iOS `PhysicallyBasedMaterial` with
+     * `emissiveColor`). SceneView's colour materials have no emissive parameter, so this is
+     * Filament's glTF material (the one gltfio uses for the chunks): base colour, roughness 0.4,
+     * metallic 0, emissive factor and strength; blended below full opacity. If the device has no
+     * such material, the plain colour material is used (no glow).
      */
     fun highlight(opacity: Double): MaterialInstance {
         val step = step(opacity)
         return highlights.getOrPut(step) {
-            loader.createColorInstance(
+            val base = Float4(srgbToLinear(0xE3), srgbToLinear(0x05), srgbToLinear(0x32), alpha(step))
+            val key = MaterialProvider.MaterialKey().apply { alphaMode = if (step >= 100) ALPHA_OPAQUE else ALPHA_BLEND }
+            loader.createUbershaderInstance(key, label = "highlight")?.also {
+                it.setBaseColorFactor(base)
+                it.setMetallicFactor(0.0f)
+                it.setRoughnessFactor(0.4f)
+                it.setEmissiveFactor(Float4(srgbToLinear(0xFF), srgbToLinear(0x3B), srgbToLinear(0x4E), 1.0f))
+                it.setEmissiveStrength(EMISSIVE_INTENSITY * EMISSIVE_GAIN)
+            } ?: loader.createColorInstance(
                 Float4(0xE3 / 255f, 0x05 / 255f, 0x32 / 255f, alpha(step)),
                 metallic = 0.0f,
                 roughness = 0.4f,
-            ).also { setEmissive(it, 0xFF / 255f, 0x3B / 255f, 0x4E / 255f, 0.8f) }
+            )
         }
     }
 
@@ -83,16 +99,27 @@ internal class SceneMaterials(private val loader: MaterialLoader) {
         highlights.clear()
     }
 
-    private fun setEmissive(instance: MaterialInstance, r: Float, g: Float, b: Float, strength: Float) {
-        val parameter = instance.material.parameters.firstOrNull { it.name == "emissive" } ?: return
-        when (parameter.type) {
-            Material.Parameter.Type.FLOAT4 -> instance.setParameter("emissive", r * strength, g * strength, b * strength, 1.0f)
-            Material.Parameter.Type.FLOAT3 -> instance.setParameter("emissive", r * strength, g * strength, b * strength)
-            else -> Unit
-        }
-    }
-
     companion object {
+        /** iOS `emissiveIntensity`. */
+        const val EMISSIVE_INTENSITY = 0.8f
+
+        /**
+         * RealityKit's emissive intensity and Filament's emissive strength aren't the same unit
+         * (Filament's is affected by the camera exposure): tuned side by side with an iPhone on a
+         * device (docs/device-test.md, P2-02).
+         */
+        const val EMISSIVE_GAIN = 1.0f
+
+        /** glTF alpha modes (cgltf): the material key's `alphaMode`. */
+        private const val ALPHA_OPAQUE = 0
+        private const val ALPHA_BLEND = 2
+
+        /** An 8-bit sRGB channel as a linear value (glTF factors are linear). */
+        internal fun srgbToLinear(channel: Int): Float {
+            val c = channel / 255.0
+            return (if (c <= 0.04045) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)).toFloat()
+        }
+
         /**
          * Architecture and structure keep the colours in the file (IFC surface colours); systems
          * are recoloured from the catalog so colour changes don't need reprocessing.
