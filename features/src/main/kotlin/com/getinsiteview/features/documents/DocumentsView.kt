@@ -60,6 +60,7 @@ import com.getinsiteview.features.guest.ProblemView
 import com.getinsiteview.features.ui.IvTopBar
 import com.getinsiteview.features.ui.ListRow
 import com.getinsiteview.features.ui.SectionHeader
+import android.webkit.MimeTypeMap
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
@@ -75,30 +76,36 @@ class DocumentOpener {
     var opening: String? by mutableStateOf(null)
         private set
 
-    /** "Couldn't open the document". */
-    var showsFailure by mutableStateOf(false)
+    /** Why the last document didn't open: the download, or no app on the phone for its type. */
+    enum class Failure { DOWNLOAD, NO_APP }
+
+    /** "Couldn't open the document", with the reason's message. */
+    var failure: Failure? by mutableStateOf(null)
 
     suspend fun open(item: DocumentItem, session: BuildingSession, context: Context) {
         if (opening != null) return
         opening = item.id
         try {
             val file = session.open(item)
-            if (!view(context, file, item.mime)) showsFailure = true
+            if (!view(context, file, item.mime)) failure = Failure.NO_APP
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // Access ending is handled by the gate; anything else: "Couldn't open".
-            if (!GuestProblem.from(e).endsAccess) showsFailure = true
+            if (!GuestProblem.from(e).endsAccess) failure = Failure.DOWNLOAD
         } finally {
             opening = null
         }
     }
 
-    /** `ACTION_VIEW` with a read grant; false when no app can show it. */
+    /**
+     * `ACTION_VIEW` with a read grant; false when no app can show it. The type is the document's
+     * own, else the one its file extension implies (iOS QuickLook reads the file itself).
+     */
     private fun view(context: Context, file: File, mime: String): Boolean {
         val uri = FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_SUFFIX, file)
         val intent = Intent(Intent.ACTION_VIEW)
-            .setDataAndType(uri, mime.substringBefore(';').trim().ifEmpty { "*/*" })
+            .setDataAndType(uri, viewType(mime, file.extension))
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         return try {
             context.startActivity(intent)
@@ -106,6 +113,12 @@ class DocumentOpener {
         } catch (_: ActivityNotFoundException) {
             false
         }
+    }
+
+    private fun viewType(mime: String, extension: String): String {
+        val declared = mime.substringBefore(';').trim().lowercase()
+        if (declared.isNotEmpty() && declared != "application/octet-stream") return declared
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.lowercase()) ?: declared.ifEmpty { "*/*" }
     }
 
     companion object {
@@ -117,14 +130,24 @@ class DocumentOpener {
 /** "Couldn't open the document" · "Check your connection and try again." */
 @Composable
 fun DocumentFailureDialog(opener: DocumentOpener) {
-    if (!opener.showsFailure) return
+    val failure = opener.failure ?: return
     AlertDialog(
-        onDismissRequest = { opener.showsFailure = false },
+        onDismissRequest = { opener.failure = null },
         confirmButton = {
-            TextButton(onClick = { opener.showsFailure = false }) { Text(stringResource(R.string.ok), color = Palette.accent) }
+            TextButton(onClick = { opener.failure = null }) { Text(stringResource(R.string.ok), color = Palette.accent) }
         },
         title = { Text(stringResource(R.string.couldn_t_open_the_document)) },
-        text = { Text(stringResource(R.string.check_your_connection_and_try_again)) },
+        text = {
+            Text(
+                stringResource(
+                    when (failure) {
+                        DocumentOpener.Failure.DOWNLOAD -> R.string.check_your_connection_and_try_again
+                        // Android only: QuickLook always opens on iOS; here no app may handle the type.
+                        DocumentOpener.Failure.NO_APP -> R.string.no_app_on_this_phone_can_open_this_file
+                    },
+                ),
+            )
+        },
     )
 }
 

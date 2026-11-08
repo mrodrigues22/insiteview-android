@@ -7,7 +7,8 @@ English key; the key and the translator comment are kept in an XML comment above
 screen ported from Swift finds its string by searching for the English text.
 
 - `%@` becomes `%s`, `%lld` becomes `%d`, and they're numbered (`%1$s`) when there are several.
-- Apple's inflection markup (`^[%lld day](inflect: true)`) becomes a <plurals> with one/other.
+- Apple's inflection markup (`^[%lld day](inflect: true)`) becomes a <plurals> with one/other. The
+  whole inflected phrase agrees with the number (`^[%lld dia restante]` → "dias restantes").
 - A missing translation falls back to the English text.
 
 Android-only strings live in values*/strings_android.xml, which this script never touches.
@@ -43,6 +44,12 @@ def plural_of(word, locale):
     if locale == "pt-BR" and word == "item":
         return "itens"
     return PLURALS.get(word, word + "s")
+
+
+def plural_phrase(phrase, locale):
+    """Every word of an inflected phrase agrees with the number, as Apple's inflection engine does
+    (`dia restante` → `dias restantes`, `intento restante` → `intentos restantes`)."""
+    return " ".join(plural_of(word, locale) for word in phrase.split(" "))
 
 
 def resource_name(key, used):
@@ -113,7 +120,7 @@ def main():
             if match:
                 word = match.group(2)
                 one = android_format(INFLECT.sub(lambda m: f"%lld {word}", value))
-                other = android_format(INFLECT.sub(lambda m: f"%lld {plural_of(word, locale)}", value))
+                other = android_format(INFLECT.sub(lambda m: f"%lld {plural_phrase(word, locale)}", value))
                 lines.append(f'    <plurals name="{name}">')
                 lines.append(f'        <item quantity="one">{escape(one)}</item>')
                 if locale != "en":

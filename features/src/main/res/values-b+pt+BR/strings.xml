@@ -411,7 +411,7 @@
     <string name="not_in_the_model_yet">Ainda não está no modelo</string>
     <!-- Not live yet · Building status line: ready, QR not live. -->
     <string name="not_live_yet">Ainda não ativo</string>
-    <!-- Not now · Camera explainer and denied state: close without the camera. -->
+    <!-- Not now · Camera denied state: close without the camera. -->
     <string name="not_now">Agora não</string>
     <!-- Not placed yet · AR status tag before placement. -->
     <string name="not_placed_yet">Ainda não posicionado</string>
@@ -716,8 +716,8 @@
     <!-- Trial · ^[%lld day](inflect: true) left · Building status line: trial. Placeholder: days left (inflected). -->
     <plurals name="trial_n_day_left">
         <item quantity="one">Teste · %d dia restante</item>
-        <item quantity="many">Teste · %d dia restantes</item>
-        <item quantity="other">Teste · %d dia restantes</item>
+        <item quantity="many">Teste · %d dias restantes</item>
+        <item quantity="other">Teste · %d dias restantes</item>
     </plurals>
     <!-- Trial · ends today · Building status line: trial ends today. -->
     <string name="trial_ends_today">Teste · termina hoje</string>
@@ -768,8 +768,8 @@
     <!-- Wrong PIN. ^[%lld try](inflect: true) left. · PIN keypad after a wrong PIN. Placeholder: attempts left (inflected). -->
     <plurals name="wrong_pin_n_try_left">
         <item quantity="one">PIN incorreto. %d tentativa restante.</item>
-        <item quantity="many">PIN incorreto. %d tentativa restantes.</item>
-        <item quantity="other">PIN incorreto. %d tentativa restantes.</item>
+        <item quantity="many">PIN incorreto. %d tentativas restantes.</item>
+        <item quantity="other">PIN incorreto. %d tentativas restantes.</item>
     </plurals>
     <!-- Wrong PIN. Try again. · PIN keypad after a wrong PIN, attempts left unknown. -->
     <string name="wrong_pin_try_again">PIN incorreto. Tente novamente.</string>

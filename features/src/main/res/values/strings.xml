@@ -409,7 +409,7 @@
     <string name="not_in_the_model_yet">Not in the model yet</string>
     <!-- Not live yet · Building status line: ready, QR not live. -->
     <string name="not_live_yet">Not live yet</string>
-    <!-- Not now · Camera explainer and denied state: close without the camera. -->
+    <!-- Not now · Camera denied state: close without the camera. -->
     <string name="not_now">Not now</string>
     <!-- Not placed yet · AR status tag before placement. -->
     <string name="not_placed_yet">Not placed yet</string>

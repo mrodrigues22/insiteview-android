@@ -27,4 +27,6 @@
     <string name="this_phone_can_t_show_the_model_in_your_room">This phone can\'t show the model in your room. You can still explore it in 3D.</string>
     <!-- AR: the ARCore session failed to start (camera in use, ARCore error). -->
     <string name="ar_couldn_t_start_try_again_or_explore_the_model_in_3d">AR couldn\'t start. Try again, or explore the model in 3D.</string>
+    <!-- Documents: no app on the phone opens the file's type (iOS QuickLook always can). -->
+    <string name="no_app_on_this_phone_can_open_this_file">No app on this phone can open this file.</string>
 </resources>
