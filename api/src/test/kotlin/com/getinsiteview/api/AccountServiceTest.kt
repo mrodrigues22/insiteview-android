@@ -4,6 +4,7 @@ import com.getinsiteview.api.account.AccountError
 import com.getinsiteview.api.account.AccountService
 import com.getinsiteview.api.account.AuthState
 import com.getinsiteview.api.account.OAuthProvider
+import com.getinsiteview.api.account.Pkce
 import com.getinsiteview.api.account.SignInError
 import com.getinsiteview.api.account.SignInMethod
 import com.getinsiteview.core.TermsVersion
@@ -16,6 +17,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.delay
@@ -103,35 +105,35 @@ class AccountServiceTest {
         assertEquals("auth_register", sent.operationId)
     }
 
-    /** iOS: native Sign in with Apple. Android: Apple goes through the same web flow as Google. */
+    /** No Apple sign-in on Android (docs/PLAN.md §6): a server that lists Apple still gets Google and Microsoft. */
     @Test
-    fun `Sign in with Apple - the web flow's start URL and the exchanged code`() = test {
-        val h = harness { sent ->
-            if (sent.operationId == "auth_oauth_providers") {
-                RoutingTransport.Reply.json("""{"providers":["google","microsoft","apple"]}""")
-            } else {
-                RoutingTransport.Reply.json(APIFixtures.auth("access-1"))
-            }
-        }
+    fun `Apple is never offered, even when the server lists it`() = test {
+        val h = harness { RoutingTransport.Reply.json("""{"providers":["google","microsoft","apple"]}""") }
         h.account.restore()
-        assertTrue(OAuthProvider.APPLE in h.account.oauthProviders())
-        var opened: URI? = null
-        h.account.signIn(OAuthProvider.APPLE) { url ->
-            opened = url
-            URI("insiteview://auth/callback?code=apple-code")
-        }
-        assertEquals("/v1/auth/oauth/apple/start", opened?.path)
-        assertTrue(opened?.rawQuery?.contains("terms=${TermsVersion.CURRENT}") == true)
-        val exchange = h.transport.requests.first { it.operationId == "auth_oauth_exchange" }
-        assertNull(exchange.authorization)
-        assertEquals("apple-code", exchange.string("code"))
-        assertEquals("Pixel 9", exchange.string("deviceName"))
-        assertTrue(h.account.state.isSignedIn)
+        assertEquals(listOf(OAuthProvider.GOOGLE, OAuthProvider.MICROSOFT), h.account.oauthProviders())
     }
 
-    /** iOS: a 404 from `/apple/native`. Android: the server doesn't list Apple, so it isn't offered. */
+    /** The start URL carries a PKCE challenge, and the exchange sends the matching verifier. */
     @Test
-    fun `Apple not configured on this server - not offered`() = test {
+    fun `Provider sign-in binds the code with PKCE`() = test {
+        val h = harness { RoutingTransport.Reply.json(APIFixtures.auth("access-1")) }
+        h.account.restore()
+        var opened: URI? = null
+        h.account.signIn(OAuthProvider.MICROSOFT) { url ->
+            opened = url
+            URI("insiteview://auth/callback?code=ms-code")
+        }
+        val challenge = opened?.rawQuery?.split('&')?.first { it.startsWith("codeChallenge=") }?.substringAfter('=')
+        val exchange = h.transport.requests.first { it.operationId == "auth_oauth_exchange" }
+        val verifier = exchange.string("codeVerifier")
+        assertNotNull(verifier)
+        assertEquals(Pkce.challenge(verifier), challenge)
+        assertEquals("ms-code", exchange.string("code"))
+    }
+
+    /** The server doesn't list a provider, so it isn't offered; offline, nothing is. */
+    @Test
+    fun `Provider not configured on this server - not offered`() = test {
         val h = harness { RoutingTransport.Reply.json("""{"providers":["google"]}""") }
         h.account.restore()
         assertEquals(listOf(OAuthProvider.GOOGLE), h.account.oauthProviders())

@@ -49,7 +49,7 @@ class AuthStateTest {
     fun `One sign-in at a time, success keeps the user, failure the reason`() {
         val box = StateBox()
         box.apply(AuthState.Event.Restored(signedIn = false))
-        assertTrue(box.apply(AuthState.Event.Started(SignInMethod.Provider(OAuthProvider.APPLE))))
+        assertTrue(box.apply(AuthState.Event.Started(SignInMethod.Provider(OAuthProvider.MICROSOFT))))
         assertTrue(box.state.isSigningIn)
         assertFalse(box.apply(AuthState.Event.Started(SignInMethod.Email)), "a second sign-in waits")
         assertTrue(box.apply(AuthState.Event.Failed(SignInError.EmailInUse)))

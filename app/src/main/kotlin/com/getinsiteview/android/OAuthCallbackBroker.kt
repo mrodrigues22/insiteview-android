@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * The browser step of Google, Microsoft and Apple sign-in (iOS `ASWebAuthenticationSession`,
+ * The browser step of Google and Microsoft sign-in (iOS `ASWebAuthenticationSession`,
  * docs/PLAN.md §3 "Networking and auth"): [authenticate] opens the API's start URL in a Custom Tab
  * and suspends until [MainActivity] receives `insiteview://auth/callback` ([complete]). Closing the
  * tab without signing in brings the activity back without a callback ([activityResumed]), which

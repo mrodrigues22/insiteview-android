@@ -145,7 +145,7 @@ class AccountService(
         }
     }
 
-    /** The providers to offer (Google, Microsoft, Apple); empty when the server can't be reached. */
+    /** The providers to offer (Google, Microsoft); empty when the server can't be reached. */
     suspend fun oauthProviders(): List<OAuthProvider> {
         providers?.let { return it }
         val names = try {
@@ -159,15 +159,19 @@ class AccountService(
     }
 
     /**
-     * Google, Microsoft or Apple: [authenticate] shows the start URL in a Custom Tab and returns the
+     * Google or Microsoft: [authenticate] shows the start URL in a Custom Tab and returns the
      * callback URL (or throws `CancellationException` when the person closes it); the code in it is
-     * exchanged for tokens. Throws [SignInError].
+     * exchanged for tokens with this sign-in's PKCE verifier. Throws [SignInError].
      */
     suspend fun signIn(provider: OAuthProvider, authenticate: suspend (startURL: URI) -> URI): Me {
-        val url = OAuthFlow.startURL(apiBaseURL = api.baseURL, provider = provider, termsVersion = TermsVersion.CURRENT)
+        val verifier = Pkce.newVerifier()
+        val url = OAuthFlow.startURL(
+            apiBaseURL = api.baseURL, provider = provider, termsVersion = TermsVersion.CURRENT,
+            codeChallenge = Pkce.challenge(verifier),
+        )
         return signIn(SignInMethod.Provider(provider)) {
             when (val callback = OAuthFlow.callback(authenticate(url))) {
-                is OAuthFlow.Callback.Code -> api.exchangeOAuthCode(callback.code, deviceName)
+                is OAuthFlow.Callback.Code -> api.exchangeOAuthCode(callback.code, deviceName, codeVerifier = verifier)
                 is OAuthFlow.Callback.Failed -> throw callback.error
             }
         }

@@ -2,8 +2,6 @@
 <!-- Android-only strings of the app module (no iOS catalog key, or the iOS text names iOS).
      Strings shared with iOS are in :features (com.getinsiteview.features.R). Keep the three locales in step. -->
 <resources>
-    <!-- Sign-in sheet: Apple through the web sign-in (iOS shows Apple's native "Continue with Apple" button). -->
-    <string name="app_continue_with_apple">Continuar com a Apple</string>
     <!-- Sign-in sheet subtitle (save building). iOS says "on any iPhone". -->
     <string name="app_a_free_account_keeps_your_buildings_on_any_phone">Uma conta gratuita mantém seus imóveis em um só lugar, em qualquer celular.</string>
     <!-- Search tab: nothing found (iOS ContentUnavailableView.search). Placeholder: the query. -->

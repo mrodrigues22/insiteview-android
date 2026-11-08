@@ -65,8 +65,8 @@ class AccountModel(
     }
 
     /**
-     * Google, Microsoft or Apple in a Custom Tab (Android signs in with Apple on the web too,
-     * docs/PLAN.md §6): [authenticate] opens the start URL and returns the callback URL. Throws
+     * Google or Microsoft in a Custom Tab (no Apple sign-in on Android, docs/PLAN.md §6):
+     * [authenticate] opens the start URL and returns the callback URL. Throws
      * [com.getinsiteview.api.account.SignInError].
      */
     suspend fun signIn(provider: OAuthProvider, authenticate: suspend (URI) -> URI) {

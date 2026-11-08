@@ -73,8 +73,8 @@ import kotlinx.coroutines.launch
 import com.getinsiteview.features.R as FeaturesR
 
 /**
- * Sign-in (IOS-M3-01), as a sheet: Google, Microsoft and Apple (in a Custom Tab, when the server
- * has them; docs/PLAN.md §6: Apple signs in on the web here), then email and password. "Forgot
+ * Sign-in (IOS-M3-01), as a sheet: Google and Microsoft (in a Custom Tab, when the server has them;
+ * no Apple sign-in on Android, docs/PLAN.md §6), then email and password. "Forgot
  * password?" opens the web. Creating an account accepts the current terms.
  *
  * @param onFinished signed in: the sheet closes.
@@ -101,8 +101,7 @@ fun SignInView(
     )
 
     LaunchedEffect(Unit) {
-        // Apple first, as on iOS (its native button is above Google and Microsoft there).
-        providers = account.oauthProviders().sortedBy { it != OAuthProvider.APPLE }
+        providers = account.oauthProviders()
     }
 
     fun run(method: SignInMethod, operation: suspend () -> Unit) {
@@ -447,6 +446,5 @@ fun TermsNotice(links: WebLinks, modifier: Modifier = Modifier) {
 private fun providerTitle(provider: OAuthProvider): String = when (provider) {
     OAuthProvider.GOOGLE -> stringResource(FeaturesR.string.continue_with_google)
     OAuthProvider.MICROSOFT -> stringResource(FeaturesR.string.continue_with_microsoft)
-    OAuthProvider.APPLE -> stringResource(R.string.app_continue_with_apple)
     else -> provider.raw.replaceFirstChar { it.uppercase() }
 }

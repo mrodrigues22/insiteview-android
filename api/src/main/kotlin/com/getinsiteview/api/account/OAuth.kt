@@ -4,11 +4,13 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
 
 /**
- * A social sign-in provider for the browser round trip (`GET /v1/auth/oauth/providers`). On
- * Android every provider, Apple included, signs in through a Custom Tab (docs/PLAN.md §6: native
- * Sign in with Apple exists only on Apple platforms).
+ * A social sign-in provider for the browser round trip (`GET /v1/auth/oauth/providers`): Google and
+ * Microsoft, in a Custom Tab. There is no Apple sign-in on Android (docs/PLAN.md §6).
  */
 @JvmInline
 value class OAuthProvider private constructor(val raw: String) {
@@ -21,15 +23,15 @@ value class OAuthProvider private constructor(val raw: String) {
 
         val GOOGLE = OAuthProvider("google")
         val MICROSOFT = OAuthProvider("microsoft")
-        val APPLE = OAuthProvider("apple")
 
         /**
          * The providers the app offers, in button order, from what the server has keys for. Names
-         * the app doesn't know are left out. (iOS leaves Apple out too: it signs in natively.)
+         * the app doesn't know are left out, `apple` included: as on iOS's browser flow, and Android
+         * has no Apple sign-in at all.
          */
         fun offered(names: List<String>): List<OAuthProvider> {
             val available = names.map { it.lowercase() }.toSet()
-            return listOf(GOOGLE, MICROSOFT, APPLE).filter { it.raw in available }
+            return listOf(GOOGLE, MICROSOFT).filter { it.raw in available }
         }
     }
 }
@@ -45,13 +47,15 @@ object OAuthFlow {
     val callbackURL: URI = URI("insiteview://auth/callback")
 
     /**
-     * `{API}/v1/auth/oauth/{provider}/start?returnTo=insiteview://auth/callback&terms={version}`.
-     * `terms` records the accepted terms when the sign-in creates an account.
+     * `{API}/v1/auth/oauth/{provider}/start?returnTo=insiteview://auth/callback&terms={version}&codeChallenge={S256}`.
+     * `terms` records the accepted terms when the sign-in creates an account; `codeChallenge` binds the
+     * code to this app ([Pkce]).
      */
-    fun startURL(apiBaseURL: URI, provider: OAuthProvider, termsVersion: String?): URI {
+    fun startURL(apiBaseURL: URI, provider: OAuthProvider, termsVersion: String?, codeChallenge: String? = null): URI {
         val base = apiBaseURL.toString().substringBefore('?').substringBefore('#').trimEnd('/')
         val items = mutableListOf("returnTo" to callbackURL.toString())
         if (!termsVersion.isNullOrEmpty()) items.add("terms" to termsVersion)
+        if (!codeChallenge.isNullOrEmpty()) items.add("codeChallenge" to codeChallenge)
         // `:` and `/` are allowed in a query, but the API reads returnTo more safely encoded.
         val query = items.joinToString("&") { (name, value) -> "${encode(name)}=${encode(value)}" }
         return URI("$base/v1/auth/oauth/${provider.raw}/start?$query")
@@ -92,4 +96,26 @@ object OAuthFlow {
     } catch (_: IllegalArgumentException) {
         value
     }
+}
+
+/**
+ * PKCE for the browser round trip (RFC 7636, S256). Any Android app can register
+ * `insiteview://auth/callback`, so the one-time code alone must not be enough: the start URL carries
+ * the verifier's challenge and only the exchange that sends the verifier gets tokens.
+ */
+object Pkce {
+    private val random = SecureRandom()
+
+    /** 32 random bytes, base64url without padding: 43 characters. */
+    fun newVerifier(): String {
+        val bytes = ByteArray(32)
+        random.nextBytes(bytes)
+        return base64Url(bytes)
+    }
+
+    /** base64url(SHA-256(verifier)). */
+    fun challenge(verifier: String): String =
+        base64Url(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(StandardCharsets.US_ASCII)))
+
+    private fun base64Url(bytes: ByteArray): String = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
 }

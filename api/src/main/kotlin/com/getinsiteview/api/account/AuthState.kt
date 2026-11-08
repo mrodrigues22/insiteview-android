@@ -7,7 +7,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 /** How someone signs in (IOS-M3-01). */
 sealed interface SignInMethod {
-    /** Google, Microsoft or Apple in a Custom Tab (iOS signs in with Apple natively). */
+    /** Google or Microsoft in a Custom Tab (no Apple sign-in on Android). */
     data class Provider(val provider: OAuthProvider) : SignInMethod
 
     data object Email : SignInMethod
