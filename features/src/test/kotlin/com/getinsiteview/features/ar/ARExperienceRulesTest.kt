@@ -381,7 +381,7 @@ class ARExperienceRulesTest {
     }
 
     @Test
-    fun `outcomes are described as Swift's String(describing:) writes them`() {
+    fun `outcomes are described as Swift's String(describing) writes them`() {
         assertEquals(
             "needsMore(IVModelKit.ReferenceAlignment.Hint.anotherWall)",
             ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.NeedsMore(ReferenceAlignment.Hint.ANOTHER_WALL)),
