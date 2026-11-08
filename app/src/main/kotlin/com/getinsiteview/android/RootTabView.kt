@@ -1,5 +1,6 @@
 package com.getinsiteview.android
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.getinsiteview.api.GuestProblem
 import com.getinsiteview.design.IvType
@@ -43,6 +45,7 @@ import com.getinsiteview.design.Palette
 import com.getinsiteview.features.app.AppDependencies
 import com.getinsiteview.features.app.AppRootModel
 import com.getinsiteview.features.app.LocalAppDependencies
+import com.getinsiteview.features.app.isARCover
 import com.getinsiteview.features.guest.LocalAppUpdate
 import com.getinsiteview.features.guest.ProblemView
 import kotlinx.coroutines.flow.drop
@@ -109,6 +112,28 @@ fun RootTabView(model: AppRootModel, dependencies: AppDependencies) {
     val prompt = dependencies.signInPrompt
     val signInReason by prompt.reason.collectAsStateWithLifecycle()
 
+    // AR covers the tabs, as iOS's full-screen cover does (and switching tabs can't tear it down).
+    val buildingsEntry by buildingsNav.currentBackStackEntryAsState()
+    val searchEntry by searchNav.currentBackStackEntryAsState()
+    val arCovers = when (tab) {
+        AppTab.BUILDINGS -> isARCover(buildingsEntry)
+        AppTab.SEARCH -> isARCover(searchEntry)
+        else -> false
+    }
+
+    // Back at a tab's first screen leaves the app with its state kept, like going home on iOS.
+    // Android 12+ does that itself (predictive back to home); older versions would finish the
+    // activity and lose every tab's stack.
+    val atTabRoot = when (tab) {
+        AppTab.BUILDINGS -> buildingsEntry?.let { buildingsNav.previousBackStackEntry == null } ?: true
+        AppTab.SEARCH -> searchEntry?.let { searchNav.previousBackStackEntry == null } ?: true
+        else -> true
+    }
+    val activity = LocalContext.current.findActivity()
+    BackHandler(enabled = atTabRoot && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        activity?.moveTaskToBack(true)
+    }
+
     // A building was opened from a link or code: show the Buildings tab, where it's pushed.
     LaunchedEffect(model) {
         snapshotFlow { model.openRequests }.drop(1).collect { tab = AppTab.BUILDINGS }
@@ -118,7 +143,7 @@ fun RootTabView(model: AppRootModel, dependencies: AppDependencies) {
         containerColor = Palette.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            NavigationBar(containerColor = Palette.surface) {
+            if (!arCovers) NavigationBar(containerColor = Palette.surface) {
                 for (item in AppTab.entries) {
                     val selected = tab == item
                     NavigationBarItem(

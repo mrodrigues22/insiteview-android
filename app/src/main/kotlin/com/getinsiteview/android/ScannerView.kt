@@ -70,9 +70,8 @@ import com.getinsiteview.features.R as FeaturesR
  * goes on. The same payload is handled at most once every 2 s ([ScanDebouncer]); once a code is
  * accepted the scanner stops and the phone confirms with a haptic.
  *
- * Camera permission (Android has no "restricted"; docs/PLAN.md §3 "AR"): asked when the scanner
- * first shows; refused, it explains with iOS's "Scanning isn't available" and offers the system
- * prompt again while Android still shows it, then the app's settings.
+ * Camera permission: asked when the scanner first shows; refused, it explains with iOS's "Scanning
+ * isn't available" and nothing else, as on iOS (the camera goes back on in the system settings).
  *
  * @param showsCancel a Cancel button (as a sheet); the Scan tab has none.
  * @param onScan returns whether the payload was an Insite View code.
@@ -86,13 +85,10 @@ fun ScannerView(
 ) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(hasCameraPermission(context)) }
-    // Asked once per scanner; refusals after that go through the explanation's buttons.
+    // Asked once per scanner, as iOS's system prompt.
     var asked by rememberSaveable { mutableStateOf(false) }
-    var canAskAgain by remember { mutableStateOf(true) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
         granted = result
-        val activity = context.findActivity()
-        canAskAgain = activity != null && activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)
     }
     LaunchedEffect(Unit) {
         if (!granted && !asked) {
@@ -134,17 +130,8 @@ fun ScannerView(
             ContentUnavailable(
                 title = stringResource(FeaturesR.string.scanning_isn_t_available),
                 description = stringResource(FeaturesR.string.allow_camera_access_in_settings_or_open_the_code_with_the_ca),
+                // iOS `camera.metering.unknown`.
                 icon = { UnavailableIcon(Icons.Outlined.NoPhotography) },
-                actions = {
-                    if (canAskAgain) {
-                        PrimaryActionButton(stringResource(FeaturesR.string.allow_the_camera), onClick = {
-                            launcher.launch(Manifest.permission.CAMERA)
-                        })
-                    }
-                    SecondaryActionButton(stringResource(R.string.app_open_settings_android), onClick = {
-                        WebPages.openAppSettings(context)
-                    })
-                },
             )
         }
         if (showsCancel) {

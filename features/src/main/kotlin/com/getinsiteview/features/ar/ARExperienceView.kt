@@ -264,11 +264,23 @@ class ARExperienceModel(val session: BuildingSession, context: Context, private 
     // Onboarding
 
     /** Reads the once-per-device flags, then the first step. */
-    suspend fun loadPreferences(camera: CameraAccess) {
+    /** The system camera prompt was answered on this install (remembered: [cameraRequestAnswered]). */
+    var hasRequestedCamera: Boolean by mutableStateOf(false)
+        private set
+
+    suspend fun loadPreferences(camera: () -> CameraAccess) {
         val preferences = session.preferences
         hasSeenSafetyNote = preferences.hasSeenSafetyNote()
         hasSeenExplainer = preferences.hasSeenARExplainer()
-        refreshPreflight(camera)
+        hasRequestedCamera = preferences.hasRequestedCamera()
+        refreshPreflight(camera())
+    }
+
+    /** The system prompt was answered: a later "no rationale" means "Don't ask again" (P1-02). */
+    fun cameraRequestAnswered() {
+        hasRequestedCamera = true
+        val preferences = session.preferences
+        preferenceWrites.launch { preferences.setHasRequestedCamera(true) }
     }
 
     fun finishExplainer() {
@@ -703,13 +715,12 @@ private fun copyToClipboard(context: Context, text: String) {
 private fun ARPreflight(model: ARExperienceModel, onClose: () -> Unit) {
     val context = LocalContext.current
     val activity = LocalActivity.current
-    var asked by remember { mutableStateOf(false) }
-    fun cameraNow(): CameraAccess = currentCameraAccess(context, activity, askedThisScreen = asked)
+    fun cameraNow(): CameraAccess = currentCameraAccess(context, activity, askedThisScreen = model.hasRequestedCamera)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        asked = true
+        model.cameraRequestAnswered()
         model.refreshPreflight(cameraNow())
     }
-    LaunchedEffect(model) { model.loadPreferences(cameraNow()) }
+    LaunchedEffect(model) { model.loadPreferences(::cameraNow) }
     // Also after coming back from the settings.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { model.refreshPreflight(cameraNow()) }
 

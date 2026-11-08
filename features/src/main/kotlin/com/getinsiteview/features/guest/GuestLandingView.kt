@@ -186,6 +186,7 @@ private fun Preview(model: GuestFlowModel, previewID: UUID) {
                 revision = session.sceneRevision,
                 fitRequest = 0,
                 isInteractive = false,
+                state = session.orbitView("landing"),
                 // iOS `.accessibilityHidden(true)`: a decorative preview.
                 modifier = Modifier.fillMaxSize().clearAndSetSemantics {},
             )

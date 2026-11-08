@@ -61,6 +61,7 @@ class GuestPreferences(private val store: KeyValueStore) {
     enum class Key(val raw: String) {
         SEEN_AR_EXPLAINER("com.getinsiteview.guest.seenARExplainer"),
         SEEN_SAFETY_NOTE("com.getinsiteview.guest.seenSafetyNote"),
+        CAMERA_REQUESTED("com.getinsiteview.guest.cameraRequested"),
     }
 
     /** The "Point · Align · Explore" explainer was shown (finished or skipped). */
@@ -75,6 +76,15 @@ class GuestPreferences(private val store: KeyValueStore) {
     suspend fun hasSeenSafetyNote(): Boolean = flag(Key.SEEN_SAFETY_NOTE)
 
     suspend fun setHasSeenSafetyNote(value: Boolean) = setFlag(Key.SEEN_SAFETY_NOTE, value)
+
+    /**
+     * The system camera prompt was answered once on this install (Android only). With no rationale
+     * to show after that, the camera is off for good ("Don't ask again"): AR shows "Camera access is
+     * off" at once, as iOS does for `.denied`, instead of asking again first.
+     */
+    suspend fun hasRequestedCamera(): Boolean = flag(Key.CAMERA_REQUESTED)
+
+    suspend fun setHasRequestedCamera(value: Boolean) = setFlag(Key.CAMERA_REQUESTED, value)
 
     private suspend fun flag(key: Key) = store.getString(key.raw) == "true"
 

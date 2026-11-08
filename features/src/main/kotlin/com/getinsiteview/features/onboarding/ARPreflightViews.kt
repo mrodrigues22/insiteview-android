@@ -206,8 +206,9 @@ private fun PageDots(count: Int, current: Int) {
 }
 
 /**
- * Before the system prompt: why the camera (A-05). Also the denied state, with a link to the app's
- * settings ("Don't ask again" on Android).
+ * Before the system prompt: why the camera (A-05), with "Continue" as the only action (iOS 7ac7e5f:
+ * App Review 5.1.1(iv) rejects a pre-prompt that lets the user put the request off). Also the
+ * denied state, with a link to the app's settings ("Don't ask again" on Android) and "Not now".
  */
 @Composable
 fun CameraPermissionView(step: ARPreflightStep, requestAccess: () -> Unit, close: () -> Unit) {
@@ -253,7 +254,6 @@ fun CameraPermissionView(step: ARPreflightStep, requestAccess: () -> Unit, close
                 SecondaryActionButton(stringResource(R.string.not_now), onClick = close)
             } else {
                 PrimaryActionButton(stringResource(R.string.continue_action), onClick = requestAccess)
-                SecondaryActionButton(stringResource(R.string.not_now), onClick = close)
             }
         }
     }

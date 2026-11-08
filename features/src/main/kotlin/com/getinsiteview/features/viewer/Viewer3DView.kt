@@ -132,6 +132,7 @@ fun Viewer3DView(session: BuildingSession, navigator: BuildingNavigator, focus: 
                     focusBounds = { session.focusBounds },
                     onTap = { id -> selection = id },
                     modifier = Modifier.fillMaxSize().semantics { contentDescription = modelLabel },
+                    state = session.orbitView("viewer"),
                 )
                 Column(
                     Modifier.fillMaxWidth().background(Palette.surface.copy(alpha = 0.92f)).padding(vertical = 12.dp),

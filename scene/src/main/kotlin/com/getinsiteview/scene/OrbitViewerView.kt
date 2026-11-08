@@ -295,7 +295,10 @@ internal class OrbitTouch(context: Context, private val view: OrbitViewerView) {
                 return true
             }
         },
-    )
+    ).apply {
+        // iOS has no double-tap-and-drag zoom (P1-08); it would also orbit at the same time.
+        isQuickScaleEnabled = false
+    }
     private var lastX = 0f
     private var lastY = 0f
     private var downX = 0f

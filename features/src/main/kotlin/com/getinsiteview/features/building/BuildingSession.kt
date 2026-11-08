@@ -52,6 +52,7 @@ import com.getinsiteview.modelkit.geometry.RoomCorrection
 import com.getinsiteview.modelkit.geometry.RoomCorrections
 import com.getinsiteview.modelkit.geometry.RoomObservation
 import com.getinsiteview.scene.BuildingScene
+import com.getinsiteview.scene.OrbitViewerView
 import java.io.File
 import java.time.Instant
 import java.util.UUID
@@ -194,6 +195,15 @@ class BuildingSession(
 
     /** The building's Filament entities under one root, shared by the 3D viewer and AR. */
     val scene = BuildingScene(dependencies.applicationContext)
+
+    private val orbitViews = HashMap<String, OrbitViewerView>()
+
+    /**
+     * The orbit camera of one of the building's viewers ("landing", "viewer"), kept for the session:
+     * coming back from AR shows the angle the person left (iOS keeps the viewer alive under AR's
+     * full-screen cover).
+     */
+    fun orbitView(key: String): OrbitViewerView = orbitViews.getOrPut(key) { OrbitViewerView() }
 
     private val connection = BuildingConnection(
         access = access, api = dependencies.api, deviceId = dependencies.deviceID, platform = dependencies.platform,

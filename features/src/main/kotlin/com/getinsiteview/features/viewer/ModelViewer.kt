@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.modelkit.geometry.Bounds
 import com.getinsiteview.scene.BuildingScene
 import com.getinsiteview.scene.OrbitViewer
@@ -23,6 +24,8 @@ import com.getinsiteview.scene.OrbitViewerView
  * @param fitRequest changes when the user taps "Fit".
  * @param focusRequest changes when the camera should frame [focusBounds] (a room was chosen).
  * @param onTap the element under a tap (`null` for empty space).
+ * @param state the camera and gesture state. Pass the session's ([BuildingSession.orbitView]) so the
+ *   angle survives this view leaving composition (AR on top, as iOS keeps the viewer under its cover).
  */
 @Composable
 fun ModelViewer(
@@ -35,8 +38,8 @@ fun ModelViewer(
     focusBounds: () -> Bounds? = { null },
     isInteractive: Boolean = true,
     onTap: (String?) -> Unit = {},
+    state: OrbitViewerView = remember { OrbitViewerView() },
 ) {
-    val state = remember { OrbitViewerView() }
     val currentOnTap by rememberUpdatedState(onTap)
     // iOS's coordinator: the requests already handled.
     var handledFit by remember { mutableIntStateOf(fitRequest) }

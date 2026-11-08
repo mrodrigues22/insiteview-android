@@ -394,9 +394,10 @@ object ARExperienceRules {
      * The camera permission as iOS reads it, from Android's answers (docs/PLAN.md §3 "AR": no
      * restricted; "Don't ask again" → denied with a Settings link). Before a request, or after a
      * denial the system will still ask about (it shows a rationale), it's "not determined": the
-     * explainer asks again. A denial with no rationale after asking is "Don't ask again".
+     * explainer asks again. A denial with no rationale after asking (on this screen or any earlier
+     * one: the answer is remembered) is "Don't ask again".
      *
-     * @param askedThisScreen a request was answered on this screen.
+     * @param askedThisScreen a request was answered on this screen, or on an earlier one.
      */
     fun cameraAccess(granted: Boolean, showsRationale: Boolean, askedThisScreen: Boolean): CameraAccess = when {
         granted -> CameraAccess.AUTHORIZED

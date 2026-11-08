@@ -34,6 +34,10 @@ class GuestOnboardingTest {
         preferences.setHasSeenSafetyNote(true)
         val again = GuestPreferences(store)
         assertTrue(again.hasSeenARExplainer() && again.hasSeenSafetyNote())
+        // The camera prompt's answer is remembered across screens and launches (Android only).
+        assertTrue(!again.hasRequestedCamera())
+        again.setHasRequestedCamera(true)
+        assertTrue(GuestPreferences(store).hasRequestedCamera())
     }
 
     @Test

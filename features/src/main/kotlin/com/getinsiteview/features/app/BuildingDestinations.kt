@@ -1,5 +1,11 @@
 package com.getinsiteview.features.app
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -154,33 +160,68 @@ fun NavGraphBuilder.buildingDestinations(
     dependencies: AppDependencies,
     arScreen: @Composable (session: BuildingSession, close: () -> Unit) -> Unit,
 ) {
-    composable<GuestFlowRoute> { entry ->
+    composable<GuestFlowRoute>(
+        exitTransition = { underARExit() },
+        popEnterTransition = { underARPopEnter() },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         GuestFlowView(model, remember(navController) { BuildingNavigator(navController) })
     }
-    composable<BuildingRoute.Home> { entry ->
+    composable<BuildingRoute.Home>(
+        exitTransition = { underARExit() },
+        popEnterTransition = { underARPopEnter() },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         BuildingHomeView(model.session, remember(navController) { BuildingNavigator(navController) })
     }
-    composable<BuildingRoute.Viewer> { entry ->
+    composable<BuildingRoute.Viewer>(
+        exitTransition = { underARExit() },
+        popEnterTransition = { underARPopEnter() },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         val focus = remember(entry) { entry.toRoute<BuildingRoute.Viewer>().focus }
         Viewer3DView(model.session, remember(navController) { BuildingNavigator(navController) }, focus)
     }
-    composable<BuildingRoute.Rooms> { entry ->
+    composable<BuildingRoute.Rooms>(
+        exitTransition = { underARExit() },
+        popEnterTransition = { underARPopEnter() },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         val need = remember(entry) { entry.toRoute<BuildingRoute.Rooms>().professionalNeed }
         RoomsView(model.session, remember(navController) { BuildingNavigator(navController) }, need)
     }
-    composable<BuildingRoute.Documents> { entry ->
+    composable<BuildingRoute.Documents>(
+        exitTransition = { underARExit() },
+        popEnterTransition = { underARPopEnter() },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         DocumentsView(model.session, remember(navController) { BuildingNavigator(navController) })
     }
-    composable<BuildingRoute.AR> { entry ->
+    // iOS presents AR as a full-screen cover: it slides up over the building screen (which stays
+    // put underneath) and down again when closed. The tab bar hides while it's up (RootTabView).
+    composable<BuildingRoute.AR>(
+        enterTransition = { slideInVertically(tween(COVER_MILLIS)) { it } },
+        exitTransition = { ExitTransition.KeepUntilTransitionsFinished },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { slideOutVertically(tween(COVER_MILLIS)) { it } },
+    ) { entry ->
         val model = rememberGuestFlowModel(navController, entry, dependencies)
         arScreen(model.session) { navController.popBackStack() }
     }
 }
+
+private const val COVER_MILLIS = 350
+
+/** The screen under AR stays where it is while the cover slides over it (else the NavHost's default). */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.underARExit(): ExitTransition? =
+    if (targetState.destination.hasRoute<BuildingRoute.AR>()) ExitTransition.KeepUntilTransitionsFinished else null
+
+/** …and is simply there again when the cover slides away. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.underARPopEnter(): EnterTransition? =
+    if (initialState.destination.hasRoute<BuildingRoute.AR>()) EnterTransition.None else null
+
+/** Whether [entry] is the AR cover: the tab bar hides under it. */
+fun isARCover(entry: NavBackStackEntry?): Boolean = entry?.destination?.hasRoute<BuildingRoute.AR>() == true
 
 /**
  * The flow's model, from the nearest [GuestFlowRoute] entry at or below [entry] (its
