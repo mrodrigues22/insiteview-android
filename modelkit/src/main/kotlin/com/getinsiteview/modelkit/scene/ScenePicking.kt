@@ -11,12 +11,14 @@ import kotlin.math.tan
 
 /**
  * Tapping an element (iOS: RealityKit collision shapes and `entity(at:)`, SCN 341-368): a ray
- * against each element's picking box, the nearest hit wins. Boxes are in the element's own frame,
- * grown so thin conduits stay tappable ([PickingShape]).
+ * against each element's picking shape, the nearest hit wins. Shapes are in the element's own frame:
+ * boxes grown so thin conduits stay tappable ([PickingShape]), and for long diagonal runs
+ * ([usesHull]) the exact convex hull of the element's mesh, as iOS's `generateConvex(from:)`.
  *
- * Long diagonal runs get their convex hull on iOS; Filament keeps no CPU copy of the meshes
- * (gltfio uploads them and, with meshopt compression, decodes them only into GPU buffers), so here
- * they fall back to the grown box, as iOS does for an element without a mesh of its own (SCN 358-363).
+ * Filament keeps no CPU copy of the meshes (gltfio uploads them and, with meshopt compression,
+ * decodes them only into GPU buffers), so hulls come from the chunk's GLB bytes ([ElementHulls]).
+ * A run without a hull (no mesh of its own, or the file couldn't be read) falls back to its grown
+ * box, as iOS does for an element without a mesh (SCN 358-363).
  */
 object ScenePicking {
     /**
@@ -24,10 +26,22 @@ object ScenePicking {
      *
      * @property box the picking box in the element's own frame.
      * @property elementFromModel model (the building root's frame) → the element's frame, column-major.
+     * @property hull the element's convex hull in its own frame ([ElementHulls]); when set, the ray
+     *   is tested against it instead of [box].
      */
-    class Target(val id: String, val box: Bounds, val elementFromModel: DoubleArray)
+    class Target(val id: String, val box: Bounds, val elementFromModel: DoubleArray, val hull: ConvexHull? = null)
 
-    /** The picking box for an element whose visual bounds (its own frame) are [bounds]. */
+    /**
+     * Whether an element with these visual bounds (its own frame) is picked by its convex hull
+     * ([PickingShape.ConvexHull]): read it with [ElementHulls] and pass it to its [Target].
+     */
+    fun usesHull(bounds: Bounds, isSystemElement: Boolean): Boolean =
+        PickingShape.forElement(bounds, isSystemElement) == PickingShape.ConvexHull
+
+    /**
+     * The picking box for an element whose visual bounds (its own frame) are [bounds]; for a
+     * [usesHull] element, the box it falls back to without a hull.
+     */
     fun pickingBox(bounds: Bounds, isSystemElement: Boolean): Bounds = when (val shape = PickingShape.forElement(bounds, isSystemElement)) {
         is PickingShape.Box -> Bounds(min = shape.center - shape.size / 2.0, max = shape.center + shape.size / 2.0)
         PickingShape.ConvexHull -> {
@@ -81,7 +95,8 @@ object ScenePicking {
         for (target in targets) {
             val o = Matrix4.transformPoint(target.elementFromModel, origin)
             val d = Matrix4.transformDirection(target.elementFromModel, direction)
-            val t = intersect(o, d, target.box) ?: continue
+            val hull = target.hull
+            val t = (if (hull != null) hull.intersect(o, d) else intersect(o, d, target.box)) ?: continue
             if (t < bestT) {
                 bestT = t
                 best = target.id

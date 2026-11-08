@@ -35,6 +35,8 @@ import io.github.sceneview.node.RenderableNode
 import io.github.sceneview.node.SphereNode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import com.getinsiteview.modelkit.scene.ElementHulls
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -161,8 +163,32 @@ class BuildingScene(context: Context) {
         this.index = index
         applyFilters(node)
         restyle(node)
-        addPickTargets(node)
+        val hullIDs = addPickTargets(node)
         trackProximity(node, index)
+        addPickHulls(node, bytes, hullIDs)
+    }
+
+    /**
+     * Long diagonal runs get their exact convex hull, as iOS's `generateConvex(from:)`: decoded from
+     * the chunk's GLB off the main thread (Filament keeps no CPU copy of meshes). Until it's ready,
+     * or if the file can't be decoded, they keep their grown box.
+     */
+    private suspend fun addPickHulls(node: ChunkNode, bytes: ByteArray, ids: Set<String>) {
+        if (ids.isEmpty()) return
+        val hulls = withContext(Dispatchers.Default) {
+            try {
+                ElementHulls.read(bytes, ids)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyMap()
+            }
+        }
+        if (isDestroyed || chunks[node.key] !== node) return
+        for ((id, hull) in hulls) {
+            val target = node.pickTargets[id] ?: continue
+            node.pickTargets[id] = ScenePicking.Target(target.id, target.box, target.elementFromModel, hull)
+        }
     }
 
     /**
@@ -458,7 +484,7 @@ class BuildingScene(context: Context) {
     /**
      * The element a ray (world coordinates) meets first, among those showing (iOS: RealityKit
      * collision boxes and `entity(at:)`). Boxes are grown so thin conduits stay tappable
-     * ([ScenePicking]); long diagonal runs fall back to their grown box.
+     * ([ScenePicking]); long diagonal runs use their exact hull once decoded ([addPickHulls]).
      */
     fun pick(origin: Vec3, direction: Vec3): String? {
         val modelFromWorld = Matrix4.invert(relative(root, ancestor = null)) ?: return null
@@ -477,9 +503,13 @@ class BuildingScene(context: Context) {
         return ScenePicking.pick(o, d, targets)
     }
 
-    /** Picking boxes from each element's visual bounds in its own frame (iOS `addCollisions`). */
-    private fun addPickTargets(node: ChunkNode) {
+    /**
+     * Picking boxes from each element's visual bounds in its own frame (iOS `addCollisions`).
+     * Returns the elements that want a convex hull instead ([ScenePicking.usesHull]).
+     */
+    private fun addPickTargets(node: ChunkNode): Set<String> {
         val isSystem = SceneMaterials.isRecoloured(node.system)
+        val hullIDs = HashSet<String>()
         for ((id, element) in node.elements) {
             val box = Bounds.union(
                 node.elementParts[id].orEmpty().mapNotNull { part ->
@@ -488,7 +518,9 @@ class BuildingScene(context: Context) {
             ) ?: continue
             val elementFromModel = Matrix4.invert(relative(element, ancestor = root)) ?: continue
             node.pickTargets[id] = ScenePicking.Target(id, ScenePicking.pickingBox(box, isSystemElement = isSystem), elementFromModel)
+            if (ScenePicking.usesHull(box, isSystemElement = isSystem)) hullIDs += id
         }
+        return hullIDs
     }
 
     // endregion
