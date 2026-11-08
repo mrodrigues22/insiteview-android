@@ -132,30 +132,28 @@ back to the same building after install (Install Referrer).
 
 ### 3.2 Decided differences
 
-The platform differences already decided are in `docs/PLAN.md` §6:
+Updated 2026-11-08 after the parity pass (§9): the only differences left are the platform ones in
+`docs/PLAN.md` §6:
 - App Links and the Install Referrer instead of the App Clip.
-- Apple sign-in through the web.
+- **No Apple sign-in on Android** (product decision): Google, Microsoft and email.
 - GLB with Filament instead of USDZ with RealityKit.
-- ARCore equivalents for plates, floor and depth.
+- ARCore equivalents for plates, floor and depth (and an ARCore install check).
 - `ACTION_VIEW` instead of QuickLook.
 - CameraX with ML Kit instead of VisionKit.
-- Custom Tabs, Google Play, and per-app language.
-
-The UI differences forced by Compose are in the table under `docs/PLAN.md` §3 "AR":
-- A search field instead of `.searchable`.
-- A full swipe to favourite.
-- An inline "Locate in AR" button.
-- No emissive glow.
-- Box picking.
-- A continuous TalkBack slider.
-- A cooler camera only at start.
-- Several tracked images.
-- Scanner permission buttons.
-- AR as a navigation destination.
-- An ARCore check.
+- Custom Tabs (with PKCE), Google Play, and per-app language.
+- Glass blurs Compose content only; over the camera and the 3D model it's tinted (SurfaceViews can't be
+  sampled).
+- With an alignment held, a hot phone's cooler camera format waits for the session's next start (ARCore
+  must pause to change it); rendering lightens at once.
 - "phone" instead of "iPhone".
 
-Don't add to those lists without a reason written next to the entry.
+Everything that used to be listed here as forced by Compose (search placement, swipe actions, emissive
+glow, box picking, TalkBack slider, several tracked images, scanner buttons, AR as a destination) now
+matches iOS. **The visual reference is the iPhone app as it ships (iOS 26 Liquid Glass):
+`insiteview-ios/docs/app-store-screenshots`**; where the screenshots and a reading of the Swift
+disagree, the screenshots win.
+
+Don't add to that list without a reason written next to the entry.
 
 ### 3.3 Android conventions we adopt (not differences, just Android)
 
@@ -199,11 +197,8 @@ These block every real-world use, and none of them can be fixed in this reposito
    - Add `Clients:AndroidMinVersion` with the same validation, an `.env.example` entry and a PLAN §4 entry.
    - Check `X-Client: android` against it, and make the detail text name the right store. The app shows
      its own string anyway.
-3. **Apple sign-in on the web flow.** Android shows Apple only when `/v1/auth/oauth/providers` lists it,
-   which happens only when `Apple.WebConfigured` (Services ID, key) is set in production.
-   - Confirm it's configured in production.
-   - Otherwise either configure it, or accept that Android users see Google, Microsoft and email only.
-     That's an open decision, §12.
+3. ~~Apple sign-in on the web flow.~~ Decided 2026-11-08: Android has no Apple sign-in; the app ignores
+   `apple` in `/v1/auth/oauth/providers`.
 4. **OAuth callback hardening.** On Android, `insiteview://auth/callback` is an exported intent filter any
    app can also register. The exchange code is short-lived and single-use, but bind it to the request: a
    `state` or PKCE `code_verifier` that the app sends to `start` and to `auth_oauth_exchange`. iOS benefits
@@ -3068,6 +3063,30 @@ Record each phone's `hasLiDAR`.
 
 ## 9. Parity backlog
 
+### Status after the parity pass (2026-11-08)
+
+Every item below was worked in one pass across the four repositories (commits name the IDs). Code that
+needs a device to confirm is marked so; `docs/device-test.md` "Parity with the iPhone" lists the checks.
+
+| IDs | Status |
+|---|---|
+| P0-01, P0-05 | Done in `insiteview-api` (`AndroidApp` visits, `Clients:AndroidMinVersion`; full API suite passes) |
+| P0-02, P0-03 | Done in `insiteview-web` (`assetlinks.json`, Play referrer with `code`/`plate` or `token`; the app reads `token=` too) |
+| P0-04 | Done (activity handles rotation); device check |
+| P0-06 | Open: Play Console is the owner's (AND-M0-04) |
+| P1-01, P1-02, P1-03, P1-04, P1-05, P1-06, P1-07, P1-08, P1-11, P1-12, P1-13, P1-14, P1-15, P1-16, P1-17, P1-18 | Done |
+| P1-09, P1-10 | Done; device check (Instant Placement, TalkBack) |
+| P2-01 | Done: exact convex hulls from the chunk GLB (meshopt decoder and quickhull in `:modelkit`, golden tests) |
+| P2-02 | Emissive highlight done; the gain and lighting are tuned on a device |
+| P2-03, P2-04, P2-06, P2-07, P2-08, P2-09 | Done. P2-07: the iOS 26 tab bar *has* a selection pill (screenshots), so Android keeps one, in iOS's glass style |
+| P2-05 | Partly wrong: iOS also shows a spinner in the save button. The PIN haptic and full-height sheet are done |
+| S-01 … S-05 | Fixed on both platforms (iOS IVAPI change tested on Linux; app and IVFeatures need Xcode Cloud) |
+| Also fixed | API: NuGet audit blocked every restore (pinned crypto packages). Android: stale `BillingDetailsResponse` removed (the API dropped it) |
+
+Corrections to the audit: P1-11's 14 dp padding applies to the need chips only (iOS `NeedLabel`); system
+chips keep 12 dp, as iOS's `Chip`.
+
+
 Every gap from §4–§8 is listed here once, with an ID to put in commit messages. The section tables give the
 full context. Statuses are as of the header date; strike an item through when it ships.
 
@@ -3226,9 +3245,9 @@ Each milestone ends with something checkable. The `AND-M*` items in `docs/PLAN.m
 | # | Question | Recommendation |
 |---|---|---|
 | 1 | Which branch becomes `main` for Android? The port lives on `claude/festive-hypatia-xhua3q` (the remote's default) and `claude/android-app-plan-st0bwi`, at the same commit | Create `main` from it now, protect it, and point CI and the release workflow at it |
-| 2 | Apple sign-in on Android depends on the API's web Apple OAuth being configured | Configure it (Services ID + key) so all four options show, as on iPhone |
-| 3 | iOS uses the system font (SF) for small text; Android uses Barlow everywhere | Use the platform font where iOS uses the system font (P1-13): that is what "the same" means on each platform |
-| 4 | TalkBack moves the See inside slider continuously (decided in PLAN) | Revisit: custom `setProgress` semantics can snap to detents like VoiceOver; cheap and closer to iOS |
-| 5 | The shared behaviours S-01 to S-05 | Fix S-01, S-02, S-04 on both platforms after launch; S-03 needs a product call; take Android's S-05 behaviour to iOS |
-| 6 | Back at a tab root exits the app | Keep (standard Android); optionally go to Buildings first, like many tabbed Android apps |
+| 2 | ~~Apple sign-in on Android~~ | **Decided:** no Apple sign-in on Android |
+| 3 | ~~System font for small text~~ | **Done:** the platform font where iOS uses SF (P1-13) |
+| 4 | ~~TalkBack slider~~ | **Done:** TalkBack steps between detents |
+| 5 | ~~Shared behaviours S-01 to S-05~~ | **Done on both platforms;** S-03: the account's units decide when signed in |
+| 6 | Back at a tab root | **Done:** leaves the app with its state kept (Android 8–11 too) |
 | 7 | Test phones: there are few 2026 phones with a ToF sensor, so wall marks are rarely available | Test wall marks on one ToF phone if one can be borrowed; otherwise ship them untested behind the same ToF check |

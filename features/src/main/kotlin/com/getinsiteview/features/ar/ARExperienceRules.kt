@@ -7,13 +7,16 @@ import com.getinsiteview.modelkit.ar.PlacementState
 import com.getinsiteview.modelkit.ar.TrackingStatus
 import com.getinsiteview.modelkit.geometry.PlateAnchoring
 import com.getinsiteview.modelkit.geometry.ReferenceAlignment
+import com.getinsiteview.modelkit.geometry.ReferenceFit
 import com.getinsiteview.modelkit.geometry.ReferenceMark
 import com.getinsiteview.modelkit.geometry.ReferencePoint
 import com.getinsiteview.modelkit.geometry.Vec3
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -423,7 +426,9 @@ object ARExperienceRules {
      * failed alignment can be reported exactly: the room's model points, the marks (where they are
      * now on the floor, and where they were marked), the floor height and the planes it was chosen
      * from, the camera's height, and the outcome. Model coordinates for points, world for marks and
-     * planes; metres rounded to the millimetre; keys sorted.
+     * planes; metres rounded to the millimetre. The text is what iOS's `JSONSerialization` writes
+     * with `[.prettyPrinted, .sortedKeys]` ([appleJSON]), and [outcome] is written as Swift's
+     * `String(describing:)` ([outcomeDescription]), so reports from both apps compare.
      */
     fun copyDetailsJSON(
         room: RoomDetails,
@@ -433,7 +438,7 @@ object ARExperienceRules {
         references: List<ReferencePoint>,
         marks: List<ReferenceMark>,
         marksOnFloor: List<ReferenceMark>,
-        outcome: String?,
+        outcome: ReferenceAlignment.Outcome?,
     ): String {
         val details = JsonObject(
             mapOf(
@@ -475,13 +480,11 @@ object ARExperienceRules {
                         )
                     },
                 ),
-                "outcome" to JsonPrimitive(outcome ?: "none"),
+                "outcome" to JsonPrimitive(outcome?.let { outcomeDescription(it) } ?: "none"),
             ),
         )
-        return prettyJson.encodeToString(JsonElement.serializer(), sorted(details))
+        return appleJSON(details)
     }
-
-    private val prettyJson = Json { prettyPrint = true }
 
     /** Swift's `(v * 1000).rounded() / 1000`: to the millimetre, halves away from zero. */
     internal fun millimetres(value: Double): Double {
@@ -495,11 +498,197 @@ object ARExperienceRules {
 
     private fun vector(v: Vec3): JsonElement = JsonArray(listOf(v.x, v.y, v.z).map { JsonPrimitive(millimetres(it)) })
 
-    /** iOS `.sortedKeys`. */
-    private fun sorted(element: JsonElement): JsonElement = when (element) {
-        is JsonObject -> JsonObject(element.entries.sortedBy { it.key }.associate { it.key to sorted(it.value) })
-        is JsonArray -> JsonArray(element.map { sorted(it) })
-        else -> element
+    /**
+     * iOS `JSONSerialization` with `[.prettyPrinted, .sortedKeys]`: two-space indents, `"key" : value`,
+     * keys sorted, empty containers as `[\n\n]` on their own indent, `/` escaped, whole numbers
+     * without a fraction (`2`, not `2.0`) and other numbers in their shortest form.
+     */
+    internal fun appleJSON(element: JsonElement): String = StringBuilder().also { writeApple(element, 0, it) }.toString()
+
+    private fun writeApple(element: JsonElement, indent: Int, out: StringBuilder) {
+        val pad = "  ".repeat(indent)
+        val inner = "  ".repeat(indent + 1)
+        when (element) {
+            is JsonObject -> {
+                out.append("{\n")
+                if (element.isEmpty()) out.append('\n')
+                element.entries.sortedBy { it.key }.forEachIndexed { index, (key, value) ->
+                    if (index > 0) out.append(",\n")
+                    out.append(inner).append(appleString(key)).append(" : ")
+                    writeApple(value, indent + 1, out)
+                }
+                if (element.isNotEmpty()) out.append('\n')
+                out.append(pad).append('}')
+            }
+            is JsonArray -> {
+                out.append("[\n")
+                if (element.isEmpty()) out.append('\n')
+                element.forEachIndexed { index, value ->
+                    if (index > 0) out.append(",\n")
+                    out.append(inner)
+                    writeApple(value, indent + 1, out)
+                }
+                if (element.isNotEmpty()) out.append('\n')
+                out.append(pad).append(']')
+            }
+            JsonNull -> out.append("null")
+            is JsonPrimitive -> when {
+                element.isString -> out.append(appleString(element.content))
+                element.content == "true" || element.content == "false" -> out.append(element.content)
+                else -> out.append(appleNumber(element.content.toDouble()))
+            }
+        }
+    }
+
+    private fun appleString(value: String): String = buildString {
+        append('"')
+        for (c in value) {
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '/' -> append("\\/")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                '\b' -> append("\\b")
+                '\u000C' -> append("\\f")
+                else -> if (c < ' ') append("\\u").append(String.format(Locale.ROOT, "%04x", c.code)) else append(c)
+            }
+        }
+        append('"')
+    }
+
+    /** `JSONSerialization`'s numbers: `2` for 2.0, `-1.457`, the shortest digits that read back. */
+    private fun appleNumber(value: Double): String {
+        if (value == floor(value) && abs(value) < 1e15) return value.toLong().toString()
+        val (digits, exponent) = shortestDigits(abs(value))
+        return (if (value < 0) "-" else "") + plainDecimal(digits, exponent, wholeSuffix = "")
+    }
+
+    // Swift's `String(describing:)` of IVModelKit's `ReferenceAlignment.Outcome`
+
+    /**
+     * The outcome as iOS copies it (`String(describing: outcome)`): the case name, and its payload
+     * as Swift's `debugPrint` writes it: qualified type names (`IVModelKit.ReferenceFit(…)`), every
+     * stored property in declaration order (`label: value`), `Optional(…)`/`nil`, quoted strings,
+     * `SIMD3<Double>(x, y, z)` and Swift's shortest doubles ([swiftDouble]).
+     */
+    fun outcomeDescription(outcome: ReferenceAlignment.Outcome): String = when (outcome) {
+        is ReferenceAlignment.Outcome.NeedsMore -> "needsMore(IVModelKit.ReferenceAlignment.Hint.${swiftCase(outcome.hint)})"
+        is ReferenceAlignment.Outcome.Matched -> "matched(${fitDescription(outcome.fit)})"
+        is ReferenceAlignment.Outcome.Ambiguous -> "ambiguous([${outcome.fits.joinToString(", ") { fitDescription(it) }}])"
+        is ReferenceAlignment.Outcome.NoMatch -> "noMatch(IVModelKit.ReferenceAlignment.NoMatch.${swiftCase(outcome.reason)})"
+    }
+
+    private fun swiftCase(hint: ReferenceAlignment.Hint): String = when (hint) {
+        ReferenceAlignment.Hint.MORE_POINTS -> "morePoints"
+        ReferenceAlignment.Hint.ANOTHER_WALL -> "anotherWall"
+        ReferenceAlignment.Hint.SPREAD_OUT -> "spreadOut"
+    }
+
+    private fun swiftCase(reason: ReferenceAlignment.NoMatch): String = when (reason) {
+        ReferenceAlignment.NoMatch.NO_CORNERS -> "noCorners"
+        ReferenceAlignment.NoMatch.NO_OBJECTS -> "noObjects"
+        ReferenceAlignment.NoMatch.TOO_FAR -> "tooFar"
+    }
+
+    private fun fitDescription(fit: ReferenceFit): String {
+        // `markCentre` is internal to :modelkit; it's set exactly when walls are among the matches
+        // (`evaluate`, kept by `refit`), and `centre` returns it then.
+        val markCentre = if (fit.matches.any { it.reference.kind == ReferencePoint.Kind.WALL }) fit.centre else null
+        return "IVModelKit.ReferenceFit(transform: IVModelKit.YawTransform(yaw: ${swiftDouble(fit.transform.yaw)}, " +
+            "translation: ${simd(fit.transform.translation)}), " +
+            "matches: [${fit.matches.joinToString(", ") { matchDescription(it) }}], " +
+            "rms: ${swiftDouble(fit.rms)}, " +
+            "dropped: ${optional(fit.dropped?.let { droppedDescription(it) })}, " +
+            "markCentre: ${optional(markCentre?.let { simd(it) })})"
+    }
+
+    private fun matchDescription(match: ReferenceFit.Match): String =
+        "IVModelKit.ReferenceFit.Match(markIndex: ${match.markIndex}, reference: ${pointDescription(match.reference)}, " +
+            "residual: ${swiftDouble(match.residual)})"
+
+    private fun droppedDescription(dropped: ReferenceFit.Dropped): String =
+        "IVModelKit.ReferenceFit.Dropped(markIndex: ${dropped.markIndex}, nearest: ${optional(dropped.nearest?.let { pointDescription(it) })}, " +
+            "distance: ${swiftDouble(dropped.distance)})"
+
+    private fun pointDescription(point: ReferencePoint): String =
+        "IVModelKit.ReferencePoint(id: ${swiftString(point.id)}, kind: IVModelKit.ReferencePoint.Kind.${point.kind.raw}, " +
+            "position: ${simd(point.position)}, elementID: ${optional(point.elementID?.let { swiftString(it) })}, " +
+            "height: ${swiftDouble(point.height)}, normal: ${optional(point.normal?.let { simd(it) })}, " +
+            "halfLength: ${swiftDouble(point.halfLength)})"
+
+    private fun optional(described: String?): String = described?.let { "Optional($it)" } ?: "nil"
+
+    private fun simd(v: Vec3): String = "SIMD3<Double>(${swiftDouble(v.x)}, ${swiftDouble(v.y)}, ${swiftDouble(v.z)})"
+
+    /** Swift's `String.debugDescription`: quoted, with `\"`, `\'`, `\\`, `\n`, `\r`, `\t`, `\0` and `\u{…}` escapes. */
+    private fun swiftString(value: String): String = buildString {
+        append('"')
+        for (c in value) {
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                '\'' -> append("\\'")
+                '\u0000' -> append("\\0")
+                else -> if (c < ' ' || c == '\u007F') append("\\u{").append(Integer.toHexString(c.code)).append('}') else append(c)
+            }
+        }
+        append('"')
+    }
+
+    /**
+     * Swift's `Double.description`: the shortest digits that read back as the same double (the
+     * closest of them to its exact value), `1.0`, `0.25`, `-0.0`; exponential below 0.0001 or
+     * above 2^54 (`1e-05`, `1.5e-07`); `inf`, `-inf`, `nan`.
+     */
+    internal fun swiftDouble(value: Double): String {
+        if (value.isNaN()) return "nan"
+        if (value.isInfinite()) return if (value > 0) "inf" else "-inf"
+        val sign = if (value < 0 || (value == 0.0 && 1 / value < 0)) "-" else ""
+        if (value == 0.0) return "${sign}0.0"
+        val magnitude = abs(value)
+        val (digits, exponent) = shortestDigits(magnitude)
+        // Swift's decimal exponent: value = 0.d₁d₂… × 10^(exponent + 1).
+        if (exponent + 1 < -3 || magnitude > TWO_TO_54) {
+            val mantissa = if (digits.length > 1) digits[0] + "." + digits.substring(1) else digits
+            val power = abs(exponent).toString().padStart(2, '0')
+            return "$sign${mantissa}e${if (exponent < 0) "-" else "+"}$power"
+        }
+        return sign + plainDecimal(digits, exponent, wholeSuffix = ".0")
+    }
+
+    private const val TWO_TO_54 = 18014398509481984.0
+
+    /**
+     * The shortest significant digits of [magnitude] (> 0) that read back as it, the closest to its
+     * exact value when several do, and the power of ten of the first digit (`1.25` → "125", 0).
+     */
+    private fun shortestDigits(magnitude: Double): Pair<String, Int> {
+        val exact = BigDecimal(magnitude)
+        for (precision in 1..17) {
+            val best = listOf(RoundingMode.HALF_EVEN, RoundingMode.FLOOR, RoundingMode.CEILING)
+                .map { exact.round(MathContext(precision, it)) }
+                .filter { it.toDouble() == magnitude }
+                .minByOrNull { it.subtract(exact).abs() }
+                ?: continue
+            val unscaled = best.unscaledValue().abs().toString()
+            val exponent = unscaled.length - 1 - best.scale()
+            return unscaled.trimEnd('0').ifEmpty { "0" } to exponent
+        }
+        val fallback = exact.round(MathContext(17))
+        val unscaled = fallback.unscaledValue().abs().toString()
+        return unscaled.trimEnd('0') to unscaled.length - 1 - fallback.scale()
+    }
+
+    /** [digits] × 10^[exponent] (first digit's power) without an exponent: "0.0125", "1.25", "300" + [wholeSuffix]. */
+    private fun plainDecimal(digits: String, exponent: Int, wholeSuffix: String): String = when {
+        exponent < 0 -> "0." + "0".repeat(-exponent - 1) + digits
+        digits.length <= exponent + 1 -> digits + "0".repeat(exponent + 1 - digits.length) + wholeSuffix
+        else -> digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1)
     }
 }
 

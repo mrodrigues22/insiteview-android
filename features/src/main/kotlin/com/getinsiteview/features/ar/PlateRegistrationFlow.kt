@@ -36,6 +36,8 @@ import com.getinsiteview.api.ApiError
 import com.getinsiteview.api.BuildingPlate
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.glass
+import com.getinsiteview.design.GlassMaterial
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
 import com.getinsiteview.design.SystemStyle
@@ -338,7 +340,8 @@ internal fun Card(content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.95f), RectangleShape)
+            // iOS `.regularMaterial` in `.rect`: tinted glass over the camera.
+            .glass(RectangleShape, GlassMaterial.Regular, shadow = false)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         content = content,

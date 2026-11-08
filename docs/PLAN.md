@@ -66,7 +66,7 @@ Everything in `insiteview-ios/docs/PLAN.md` §3 applies. Android-specific notes:
   none for `auth_*`, `health_*`, `catalog_get`). Below `Clients__AndroidMinVersion`, 426 `client.outdated`
   → "Update required" → Google Play.
 - Tokens: Android Keystore AES-GCM key, ciphertext in DataStore (iOS: Keychain). Device id: a random UUID in DataStore.
-- Sign-in: Google, Microsoft and Apple through Custom Tabs → `/v1/auth/oauth/{provider}/start?returnTo=insiteview://auth/callback`
+- Sign-in: Google and Microsoft through Custom Tabs (no Apple sign-in on Android, §6) → `/v1/auth/oauth/{provider}/start?returnTo=insiteview://auth/callback&codeChallenge=…` (PKCE S256: any app can register the callback scheme, so the exchange sends the verifier)
   → the `insiteview://auth/callback` intent → `auth_oauth_exchange`. Email and password. No SDKs.
 
 ### Loading a building
@@ -99,30 +99,21 @@ ARKit → ARCore mapping (each line is a decision; device checks in `docs/device
 
 | iOS | Android |
 |---|---|
-| `detectionImages`, `maximumNumberOfTrackedImages = 1` | One `AugmentedImageDatabase` rebuilt on each settings change (placed plates while `wantsImageDetection && !isMarking`, plus the plate being registered), `session.configure` without reset. Width `sizeMm / 1000` m (quiet zone included). Only `FULL_TRACKING` image updates feed the smoother; `LAST_KNOWN_POSE` is ignored. Re-align drops the image anchors' last poses (iOS removes the anchors to force re-detection). |
+| `detectionImages`, `maximumNumberOfTrackedImages = 1` | One plate followed at a time (`SingleImageTracking`: the followed one while fully tracked, else the nearest). One `AugmentedImageDatabase` rebuilt on each settings change (placed plates while `wantsImageDetection && !isMarking`, plus the plate being registered), `session.configure` without reset. Width `sizeMm / 1000` m (quiet zone included). Only `FULL_TRACKING` image updates feed the smoother; `LAST_KNOWN_POSE` is ignored. Re-align drops the image anchors' last poses (iOS removes the anchors to force re-detection). |
 | Image pose → `PlateFrame` (`AnchorMath`) | ARCore's augmented-image pose has the same axes as ARKit's (x right, y the normal, z down the image), so the conversion is the same: right = x, up = −z, normal = y. `YawTransform` from a site anchor's pose likewise. Unit-tested in `:ar`'s JVM tests on matrices. |
 | `ARPlaneAnchor.classification == .floor` | ARCore has no floor class: `worldFloorY` is the lowest `HORIZONTAL_UPWARD_FACING` plane of at least 0.25 m² (the iOS fallback rule). Device check: reflections on shiny floors. |
 | `hasLiDAR` (wall and corner marks, mesh) | `hasDepthSensor`: ARCore `DepthMode.RAW_DEPTH_ONLY` supported **and** the back camera reports `DEPTH_OUTPUT` (a time-of-flight sensor). Motion-stereo depth alone is too noisy for the 1.5 cm / 2° tolerances tuned on LiDAR, so those phones behave as iPhones without LiDAR (floor corners only; the crosshair says to point more straight down). Wall hits: vertical planes first, then a depth hit. ARCore has no door/window plane classes. Mesh reconstruction has no counterpart; iOS raycasts never use it. |
-| `estimatedPlane` raycasts, `arView.ray(through:)` | `frame.hitTest` against planes, then depth points; screen rays from the ARCore camera's view and projection matrices. |
-| `ARCoachingOverlayView` (horizontal plane, manual placing only) | A coaching card with the same gating and the iOS strings. |
+| `estimatedPlane` raycasts, `arView.ray(through:)` | `frame.hitTest` against planes, then depth points, then ARCore Instant Placement for the floor (before a plane is found); screen rays from the ARCore camera's view and projection matrices. |
+| `ARCoachingOverlayView` (horizontal plane, manual placing only) | An animated overlay under the chrome (dim, a phone sweeping over the floor; static with animations off), the same gating and the iOS string. |
 | `SessionRelay` (delegate queue, newest frame only) | ARCore frames come from `session.update()` on the render thread: reduce each to a `FrameSample` value there and hand only the newest to the main thread. |
 | Interruption, relocalization, `.limited` reasons | `TrackingState.PAUSED` + `TrackingFailureReason` → the same `TrackingStatus` values; activity pause → interrupted (alignment lost at once), resume → relocalizing. Only relocalizing/not-available start the 2 s lost timer, as on iOS. |
-| Thermal (`.serious`: no mesh, no environment texturing, ≤ 30 fps smallest format, no wall aims) | `PowerManager` thermal status ≥ `THERMAL_STATUS_SEVERE` (API 29+; never hot below): light estimation off, a 30 fps `CameraConfig` with the smallest size, no wall aims. The initial status is read at start (iOS only reacts to changes: fixed here). |
+| Thermal (`.serious`: no mesh, no environment texturing, ≤ 30 fps smallest format, no wall aims) | `PowerManager` thermal status ≥ `THERMAL_STATUS_SEVERE` (API 29+; never hot below): light estimation off, no wall aims and SceneView's Performance preset at once; the 30 fps smallest `CameraConfig` at once when nothing is aligned (ARCore must pause to change it), else at the session's next start. The initial status is read at start (iOS only reacts to changes: fixed here). |
 | No occlusion, render effects off, `isIdleTimerDisabled` | Depth occlusion off in SceneView, no post-processing in AR, `FLAG_KEEP_SCREEN_ON` while AR runs. |
 | `OrbitViewers` release + 1 s camera wait | One Filament engine; the 3D viewer's SceneView is removed before the AR one starts (the building root moves between them, as on iOS). No wait needed unless the device test shows a black feed. |
-| RealityKit picking (collision boxes, convex hulls) | Ray–box picking in `:scene` with `PickingShape` boxes; long diagonal runs test the mesh's triangles. |
+| RealityKit picking (collision boxes, convex hulls) | Ray–box picking in `:scene` with `PickingShape` boxes; long diagonal runs get their exact convex hull, from the chunk's GLB decoded in `:modelkit` (meshopt decoder, quickhull). |
 | `OpacityComponent` (chunk × element) | Material alpha: See inside opacity on the chunk's materials times the proximity fade per element. |
 | Camera permission (`restricted`) | Android has no restricted state; "Don't ask again" maps to `CameraDenied(canOpenSettings = true)`. |
-| `.searchable` search bars | A search field at the top of the list | Compose has no navigation-bar search |
-| Swipe a building to reveal a star | A full swipe toggles the favourite | Material's swipe-to-dismiss; the empty-state text is unchanged |
-| Equipment rows: swipe for "Locate in AR" | An inline locate button | Same reason |
-| Selection highlight glows (emissive) | The accent colour without glow | SceneView's colour materials have no emissive parameter |
-| Long diagonal runs picked by their convex hull | Picked by their enlarged box | Filament keeps no CPU copy of meshes |
-| VoiceOver steps the See inside slider between detents | TalkBack adjusts it continuously | Material3's slider semantics |
-| A hot phone switches to a cooler camera format at once | Only when the AR session starts | ARCore must pause to change it, which would lose the alignment |
-| ARKit tracks one plate image at a time | ARCore may track several | Platform; only FULL_TRACKING poses feed the smoother |
-| Scanner without camera access: a message | The message plus "Allow the camera" / "Open settings" | Android lets the app ask again |
-| AR as a full-screen cover | A navigation destination | Navigation Compose; the scene claim works the same |
+| A hot phone switches to a cooler camera format at once | At once when nothing is aligned yet; with an alignment, at the session's next start (rendering lightens at once either way) | ARCore must pause to change the camera format, which would lose the alignment |
 | ARKit is always present | An ARCore check first (install from Play, or "AR isn't available on this phone") | ARCore is a separate service on Android |
 | iPhone wording ("on any iPhone", "your iPhone") | "phone" | Android-only strings in `strings_android.xml` / `strings_app.xml` |
 | Admin AR (registration, room save) disabled in the App Clip | Always available to admins and owners (there is no Clip). |
@@ -133,7 +124,7 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 ### Guest entry (no App Clip)
 
 - App Links: `https://getinsiteview.com/b/*` and `/a/*`, `autoVerify`, served by the web's
-  `/.well-known/assetlinks.json` (`ANDROID_PACKAGE`, `ANDROID_SHA256_CERT_FINGERPRINTS`).
+  `/.well-known/assetlinks.json` (`ANDROID_PACKAGE_NAME`, `ANDROID_SHA256_CERT_FINGERPRINTS`). The Play link carries `referrer=code=…&plate=…` (or `token=…` from a temporary link).
 - Not installed: the web viewer (as today). On Android the web landing shows "Get the app": Google Play
   with `referrer=code=…&plate=…`; on first launch the app reads the Install Referrer once
   (`BuildingHandoff`) and opens that building, as the iOS app does with the App Clip handoff.
@@ -158,12 +149,13 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 | iOS | Android | Why |
 |---|---|---|
 | App Clip | App Links + web viewer + "Get the app" with Install Referrer handoff | Android has no App Clips; Google Play Instant is retired |
-| Sign in with Apple (native) | Apple through the web OAuth flow (Custom Tab) | Native Apple sign-in exists only on Apple platforms |
+| Sign in with Apple (native) | No Apple sign-in: Google, Microsoft and email | Product decision (2026-11-08): Android doesn't offer Apple; a server that lists `apple` is ignored |
 | USDZ chunks (RealityKit) | GLB chunks (Filament) | Each platform gets its native format (master PLAN §6) |
 | ARKit image detection, plane classification, LiDAR | ARCore Augmented Images, lowest large upward plane as the floor, ToF depth sensor | Platform equivalents; details and decisions in §3 "AR" |
 | QuickLook | `ACTION_VIEW` through a FileProvider | Platform equivalent |
 | VisionKit scanner | CameraX + ML Kit barcode scanning | Platform equivalent |
-| `ASWebAuthenticationSession` ephemeral | A Custom Tab sharing the browser's cookies | androidx.browser 1.9 has no ephemeral tabs; revisit when it does |
+| `ASWebAuthenticationSession` ephemeral | A Custom Tab sharing the browser's cookies, with PKCE on the code | androidx.browser 1.9 has no ephemeral tabs; revisit when it does. PKCE because any app can claim the callback scheme |
+| Liquid Glass blurs whatever is behind it | Glass blurs Compose content (lists, sheets) on Android 12+; over the camera and the 3D model it's tinted glass | SurfaceViews can't be sampled for blur; older Android has no RenderEffect |
 | `SKOverlay` / App Store | Google Play (`market://`) | Platform equivalent |
 | Language: system settings link | Per-app language (Android 13+), system settings link before | Platform equivalent |
 
@@ -174,7 +166,7 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 - [x] **AND-M0-01** Gradle project: version catalog, eight modules (three JVM, five Android), build types, `local.properties` overrides, JVM-only builds for Claude Code sessions.
 - [x] **AND-M0-02** CI on every push: JVM tests, Android build, unit tests, lint.
 - [x] **AND-M0-03** `CLAUDE.md`, this plan, `docs/device-test.md`, `scripts/sync-openapi.sh`.
-- [ ] **AND-M0-04** (you) Google Play Console: app `com.getinsiteview.android`, Play App Signing, upload key, internal testing track; repository secrets for the upload key; the web's `ANDROID_PACKAGE` and `ANDROID_SHA256_CERT_FINGERPRINTS` in production.
+- [ ] **AND-M0-04** (you) Google Play Console: app `com.getinsiteview.android`, Play App Signing, upload key, internal testing track; repository secrets for the upload key; the web's `ANDROID_PACKAGE_NAME` and `ANDROID_SHA256_CERT_FINGERPRINTS` in production.
 
 ### AND-M1 · Logic modules
 
@@ -204,6 +196,20 @@ which it fixes and reports to iOS: wall mark discs keep their normal offset afte
 
 - [ ] **AND-M6-01** Strings: `scripts/xcstrings-to-android.py` converts the iOS String Catalog (en, pt-BR, es) into `strings.xml` (done; re-run it whenever the catalog changes); Android-only strings in `strings_android.xml` / `strings_app.xml`. Open: native review with iOS's IOS-M5-01.
 - [x] **AND-M6-02** App icon (adaptive, monochrome) and the Play Store icon from `insiteview-api/brand/render.py --android`.
-- [ ] **AND-M6-03** Sentry in the app (with iOS's IOS-M5-04), Play data safety form.
+- [ ] **AND-M6-03** Sentry in the app (with iOS's IOS-M5-04). Play listing and Data safety answers: `docs/play-listing.md` (entering them in Play Console waits on AND-M0-04).
 - [x] **AND-M6-04** Release workflow (`.github/workflows/release.yml`): signed `bundleRelease` on `v*` tags or by hand, AAB/APK/mapping as artifacts, upload to a Play track when `PLAY_SERVICE_ACCOUNT_JSON` is set; CI also builds the release variant. Checked unsigned (no secrets yet); signing and upload wait on AND-M0-04.
 - [ ] **AND-M6-05** Run `docs/device-test.md` on two phones and a printed plate; App Link verification on a release build.
+
+### AND-M7 · Parity with the iPhone app (docs/IOS-PARITY-PLAN.md §9)
+
+- [x] **AND-M7-01** Outside this repository: the API accepts `AndroidApp` visits, `Clients:AndroidMinVersion`, PKCE on the native OAuth code; the web serves `assetlinks.json` and passes the building in the Play install referrer (`code`/`plate` or `token`, read by `BuildingHandoff`).
+- [x] **AND-M7-02** No Apple sign-in; PKCE on provider sign-in.
+- [x] **AND-M7-03** Lifecycle: rotation keeps AR and the 3D camera; AR is a cover over the tabs; the orbit pose survives AR; no double-tap-drag zoom; Back at a tab root keeps state on Android 8–11.
+- [x] **AND-M7-04** Permissions as iOS: "Continue" only on the camera pre-prompt; a permanent denial shows at once; the scanner shows iOS's message only.
+- [x] **AND-M7-05** Strings: plurals agree in pt-BR and es; "no app opens this file" for documents.
+- [x] **AND-M7-06** Design: iOS system text styles in the platform font, the fonts' own line heights, Liquid Glass components (tab bar, buttons, navigation bar with large title, search field, segmented control, swipe actions), icons in action buttons, need chips, the See inside slider (look, snap, TalkBack detents).
+- [x] **AND-M7-07** Screens in the iOS 26 look, and the five fixes shared with iOS (session ended, offline profile, the account's units, search signed out, the sign-up error).
+- [x] **AND-M7-08** 3D: emissive highlight, the model under the bars, exact convex-hull picking of long diagonal runs.
+- [x] **AND-M7-09** AR: Instant Placement before a plane, one plate at a time, cooler at once when hot, animated floor coaching, modal safety card, locate chip and arrow, status tag, marking test gate, copy details as iOS.
+- [ ] **AND-M7-10** (you, with a phone) Device check of all the above against an iPhone: `docs/device-test.md` and the parity plan's §10 M2–M3.
+

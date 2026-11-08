@@ -3,6 +3,8 @@ package com.getinsiteview.features.ar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,17 +19,23 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.getinsiteview.design.Detent
 import com.getinsiteview.design.DetentSlider
+import com.getinsiteview.design.GlassMaterial
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.glass
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.features.viewer.RoomFocusChip
@@ -44,18 +52,22 @@ import com.getinsiteview.modelkit.SeeInside
 @Composable
 fun SeeInsidePanel(session: BuildingSession, isExpanded: Boolean, onExpandedChange: (Boolean) -> Unit) {
     val label = stringResource(if (isExpanded) R.string.fewer_filters else R.string.more_filters)
+    // iOS `.buttonStyle(.plain)` on the header: dims while pressed, no ripple.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.9f), RectangleShape)
+            .glass(RectangleShape, GlassMaterial.UltraThin)
             .padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clickable(onClickLabel = label) { onExpandedChange(!isExpanded) }
+                .clickable(interactionSource = interaction, indication = null, onClickLabel = label, role = Role.Button) { onExpandedChange(!isExpanded) }
                 .clearAndSetSemantics { contentDescription = label }
+                .alpha(if (pressed) 0.6f else 1f)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),

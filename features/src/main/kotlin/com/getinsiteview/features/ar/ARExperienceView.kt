@@ -3,32 +3,41 @@ package com.getinsiteview.features.ar
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.RotateLeft
@@ -53,8 +62,8 @@ import androidx.compose.material.icons.outlined.PanTool
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.SaveAlt
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.WarningAmber
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -76,9 +85,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -89,12 +114,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -107,11 +135,14 @@ import com.getinsiteview.ar.ARAlignmentView
 import com.getinsiteview.core.ARPreflightStep
 import com.getinsiteview.core.AnalyticsEvent
 import com.getinsiteview.core.CameraAccess
+import com.getinsiteview.design.GlassMaterial
+import com.getinsiteview.design.IvGlassButton
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
 import com.getinsiteview.design.SystemStyle
+import com.getinsiteview.design.glass
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.features.objectcard.ObjectCardContext
@@ -119,6 +150,7 @@ import com.getinsiteview.features.objectcard.ObjectCardSheet
 import com.getinsiteview.features.onboarding.ARExplainerView
 import com.getinsiteview.features.onboarding.CameraPermissionView
 import com.getinsiteview.features.onboarding.currentCameraAccess
+import com.getinsiteview.features.onboarding.isReducedMotion
 import com.getinsiteview.features.viewer.StoreyPicker
 import com.getinsiteview.modelkit.Manifest
 import com.getinsiteview.modelkit.RoomEntry
@@ -778,57 +810,62 @@ private fun ARContent(model: ARExperienceModel, onClose: () -> Unit) {
         if (model.alignments > 0) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
     }
 
+    // iOS `.accessibilityAddTraits(.isModal)` on the safety note: TalkBack skips what's behind it.
+    val safetyNoteShown = model.showsSafetyNote && !model.sessionFailed
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (model.canShowCamera) {
-            if (model.sessionFailed) {
-                ARCoreMessage(
-                    title = stringResource(R.string.ar_isn_t_available_right_now),
-                    message = stringResource(R.string.ar_couldn_t_start_try_again_or_explore_the_model_in_3d),
-                    primary = stringResource(R.string.try_again),
-                    onPrimary = { model.retrySession() },
-                    onClose = onClose,
-                )
-            } else {
-                key(model.sessionAttempt) {
-                    ARAlignmentScene(model.view, Modifier.fillMaxSize())
+        Box(Modifier.fillMaxSize().then(if (safetyNoteShown) Modifier.clearAndSetSemantics {} else Modifier)) {
+            if (model.canShowCamera) {
+                if (model.sessionFailed) {
+                    ARCoreMessage(
+                        title = stringResource(R.string.ar_isn_t_available_right_now),
+                        message = stringResource(R.string.ar_couldn_t_start_try_again_or_explore_the_model_in_3d),
+                        primary = stringResource(R.string.try_again),
+                        onPrimary = { model.retrySession() },
+                        onClose = onClose,
+                    )
+                } else {
+                    key(model.sessionAttempt) {
+                        ARAlignmentScene(model.view, Modifier.fillMaxSize())
+                    }
+                    DisposableEffect(model) {
+                        model.view.onTap = { node -> selection = session.scene.elementID(node) }
+                        model.start()
+                        onDispose { }
+                    }
                 }
-                DisposableEffect(model) {
-                    model.view.onTap = { node -> selection = session.scene.elementID(node) }
-                    model.start()
-                    onDispose { }
+            }
+            // (A moment, while the 3D view goes: black.)
+
+            if (!model.sessionFailed) {
+                // iOS `ARCoachingOverlayView` (horizontal plane), a subview of the AR view: over the
+                // camera, under the chrome. Placing by hand before the first placement; as on iOS, also
+                // while the model loads (the anchoring starts manual, without plates).
+                FloorCoachingOverlay(visible = model.canShowCamera && model.showsFloorCoaching)
+
+                Column(
+                    Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TopBar(model, onClose)
+                    LocateChip(model, Modifier.align(Alignment.CenterHorizontally))
+                    Spacer(Modifier.weight(1f))
+                    BottomPanel(model)
+                }
+
+                LocateArrow(model)
+
+                // Only once there's something to aim at (the panel says what to do until then).
+                val points = model.points
+                val fix = model.fixHere
+                if (points != null && points.room != null && points.step == PointsAlignment.Step.Marking && (points.crosshair.canAim || points.capturing)) {
+                    PointsCrosshair(points.crosshair, points.capturing)
+                } else if (fix != null && (fix.crosshair.canAim || fix.capturing)) {
+                    PointsCrosshair(fix.crosshair, fix.capturing)
                 }
             }
         }
-        // (A moment, while the 3D view goes: black.)
 
         if (!model.sessionFailed) {
-            Column(
-                Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TopBar(model, onClose)
-                LocateChip(model)
-                Spacer(Modifier.weight(1f))
-                BottomPanel(model)
-            }
-
-            LocateArrow(model)
-
-            // Only once there's something to aim at (the panel says what to do until then).
-            val points = model.points
-            val fix = model.fixHere
-            if (points != null && points.room != null && points.step == PointsAlignment.Step.Marking && (points.crosshair.canAim || points.capturing)) {
-                PointsCrosshair(points.crosshair, points.capturing)
-            } else if (fix != null && (fix.crosshair.canAim || fix.capturing)) {
-                PointsCrosshair(fix.crosshair, fix.capturing)
-            }
-
-            // iOS `ARCoachingOverlayView` (horizontal plane): placing by hand before the first placement.
-            // As on iOS, also while the model loads (the anchoring starts manual, without plates).
-            if (model.canShowCamera && model.showsFloorCoaching) {
-                FloorCoachingCard(Modifier.align(Alignment.Center))
-            }
-
             AnimatedVisibility(model.showsSafetyNote, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) {
                 SafetyNoteCard(Modifier.padding(24.dp)) { model.dismissSafetyNote() }
             }
@@ -866,41 +903,33 @@ private fun HideStatusBar() {
     }
 }
 
-/** A round translucent button over the camera (close, ⋮). */
+/** A round glass button over the camera (close, ⋮): iOS `.background(.ultraThinMaterial, in: .circle)`. */
 @Composable
 private fun CircleButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(44.dp)
-            .background(Palette.surface.copy(alpha = 0.85f), CircleShape)
-            .clickable(onClickLabel = null, role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, contentDescription = null, tint = Palette.ink)
-    }
+    IvGlassButton(icon, contentDescription = label, onClick = onClick, tint = Palette.ink, material = GlassMaterial.UltraThin)
 }
 
 // Top
 
 @Composable
 private fun TopBar(model: ARExperienceModel, onClose: () -> Unit) {
-    Row(verticalAlignment = Alignment.Top) {
-        CircleButton(Icons.Filled.Close, stringResource(R.string.close), onClose)
-        Spacer(Modifier.weight(1f))
+    // iOS `HStack(alignment: .top) { close; Spacer(); tag; Spacer(); menu }`: the tag is sized to
+    // its text (no width cap or line limit), centred between the two 44 pt buttons, and wraps
+    // before reaching them (8 pt spacing).
+    Box(Modifier.fillMaxWidth()) {
+        Box(Modifier.align(Alignment.TopStart)) { CircleButton(Icons.Filled.Close, stringResource(R.string.close), onClose) }
         Text(
             statusTagText(model),
             style = IvType.system(SystemStyle.Footnote, FontWeight.Medium),
             color = Palette.ink,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .widthIn(max = 240.dp)
-                .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 52.dp)
+                .glass(RectangleShape, GlassMaterial.UltraThin)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         )
-        Spacer(Modifier.weight(1f))
-        ARMenu(model)
+        Box(Modifier.align(Alignment.TopEnd)) { ARMenu(model) }
     }
 }
 
@@ -1084,7 +1113,7 @@ private fun StandardPanel(model: ARExperienceModel) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+                    .glass(RectangleShape, GlassMaterial.UltraThin)
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1095,12 +1124,14 @@ private fun StandardPanel(model: ARExperienceModel) {
         }
 
         if (ARExperienceRules.showsAdjustingControls(model.isManual, model.placement)) {
-            if (model.showsFineTune) FineTunePad(model)
+            if (model.showsFineTune) FineTunePad(model, Modifier.align(Alignment.CenterHorizontally))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryActionButton(
                     stringResource(R.string.fine_tune),
                     onClick = { model.showsFineTune = !model.showsFineTune },
                     modifier = Modifier.weight(1f),
+                    // iOS `Label("Fine-tune", systemImage: "slider.horizontal.3")`.
+                    icon = Icons.Outlined.Tune,
                 )
                 PrimaryActionButton(
                     stringResource(R.string.done),
@@ -1167,7 +1198,7 @@ private fun UnplacedPlateCard(model: ARExperienceModel, number: Int) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+            .glass(RectangleShape, GlassMaterial.UltraThin)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -1182,7 +1213,7 @@ private fun FixHereCard(model: ARExperienceModel, fix: ARExperienceModel.FixHere
     val scope = rememberCoroutineScope()
     val canAim = fix.crosshair.canAim || fix.capturing
     val lidar = ARAlignmentView.hasLiDAR
-    Card {
+    RegularCard {
         if (canAim) {
             Text(
                 stringResource(
@@ -1244,7 +1275,7 @@ private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomS
     val name = model.roomName(observation.spaceID) ?: ""
     val (shift, turn) = model.change(observation)
     val status = save.status
-    Card {
+    RegularCard {
         when (status) {
             ARExperienceModel.RoomSave.Status.SAVED -> Text(
                 stringResource(R.string.saved_everyone_will_see_this_room_where_it_really_is),
@@ -1332,19 +1363,19 @@ private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomS
 
 /** Locate in AR (IOS-M3-05): which element, how far in the user's units, and a way to stop. */
 @Composable
-private fun LocateChip(model: ARExperienceModel) {
+private fun LocateChip(model: ARExperienceModel, modifier: Modifier = Modifier) {
     val session = model.session
     val id = session.locating ?: return
+    // Sized to its content and centred, as iOS's VStack lays it out.
     Row(
-        Modifier
-            .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+        modifier
+            .glass(RectangleShape, GlassMaterial.UltraThin)
             .padding(start = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.GpsFixed, contentDescription = null, tint = Palette.accent)
-        Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(Modifier.weight(1f, fill = false).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(session.index[id]?.let { session.displayName(it) } ?: "", style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold), color = Palette.ink)
             val indicator = model.locateIndicator
             Text(
@@ -1358,11 +1389,15 @@ private fun LocateChip(model: ARExperienceModel) {
             )
         }
         val stop = stringResource(R.string.stop_locating)
+        // A plain button (no ripple): dims while pressed.
+        val interaction = remember { MutableInteractionSource() }
+        val pressed by interaction.collectIsPressedAsState()
         Box(
             Modifier
                 .size(44.dp)
-                .clickable(role = Role.Button) { session.locate(null) }
-                .semantics { contentDescription = stop },
+                .clickable(interactionSource = interaction, indication = null, role = Role.Button) { session.locate(null) }
+                .semantics { contentDescription = stop }
+                .alpha(if (pressed) PRESSED_ALPHA else 1f),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Filled.Cancel, contentDescription = null, tint = Palette.muted)
@@ -1386,7 +1421,8 @@ private fun LocateArrow(model: ARExperienceModel) {
                     .offset(x = (position.x - 24).dp, y = (position.y - 24).dp)
                     .size(48.dp)
                     .rotate(-(shown * 180 / PI).toFloat())
-                    .background(Palette.accent, CircleShape),
+                    // iOS `.shadow(radius: 4)`: SwiftUI's default shadow colour, black at 0.33, no offset.
+                    .circleWithShadow(Palette.accent, radius = 4.dp, shadowColor = Color.Black.copy(alpha = 0.33f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Filled.East, contentDescription = null, tint = Palette.onAccent, modifier = Modifier.size(30.dp))
@@ -1397,12 +1433,11 @@ private fun LocateArrow(model: ARExperienceModel) {
 
 /** "Fine-tune": ±1 cm and ±0.5° steps relative to where the camera looks; buttons repeat while held. */
 @Composable
-private fun FineTunePad(model: ARExperienceModel) {
+private fun FineTunePad(model: ARExperienceModel, modifier: Modifier = Modifier) {
     val units = model.session.units
     Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+        modifier
+            .glass(RectangleShape, GlassMaterial.UltraThin)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1431,9 +1466,12 @@ private fun FineTunePad(model: ARExperienceModel) {
 @Composable
 private fun NudgeButton(model: ARExperienceModel, nudge: ManualAlignment.Nudge, icon: ImageVector, label: Int) {
     val description = stringResource(label)
+    // iOS `.buttonStyle(.plain)`: dims while pressed.
+    var pressed by remember { mutableStateOf(false) }
     Box(
         Modifier
             .size(width = 52.dp, height = 44.dp)
+            .alpha(if (pressed) PRESSED_ALPHA else 1f)
             .background(Palette.surface.copy(alpha = 0.8f), RectangleShape)
             .semantics {
                 contentDescription = description
@@ -1446,6 +1484,7 @@ private fun NudgeButton(model: ARExperienceModel, nudge: ManualAlignment.Nudge, 
             .pointerInput(nudge) {
                 detectTapGestures(
                     onPress = {
+                        pressed = true
                         coroutineScope {
                             val repeating = launch {
                                 model.view.nudge(nudge)
@@ -1458,6 +1497,7 @@ private fun NudgeButton(model: ARExperienceModel, nudge: ManualAlignment.Nudge, 
                             tryAwaitRelease()
                             repeating.cancel()
                         }
+                        pressed = false
                     },
                 )
             },
@@ -1470,20 +1510,75 @@ private fun NudgeButton(model: ARExperienceModel, nudge: ManualAlignment.Nudge, 
 private const val NUDGE_REPEAT_DELAY_MILLIS = 400L
 private const val NUDGE_REPEAT_INTERVAL_MILLIS = 80L
 
+/** How plain buttons dim while pressed (as the design system's glass buttons). */
+private const val PRESSED_ALPHA = 0.6f
+
+/** iOS `.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(.regularMaterial, in: .rect)`. */
+@Composable
+private fun RegularCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .glass(RectangleShape, GlassMaterial.Regular)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content,
+    )
+}
+
+/**
+ * A filled circle with a soft shadow all round, as SwiftUI's `.shadow(color:radius:)` draws it
+ * (blur [radius], no offset). Android 9+ draws the shadow layer in hardware; earlier versions get an
+ * elevation shadow.
+ */
+private fun Modifier.circleWithShadow(fill: Color, radius: Dp, shadowColor: Color): Modifier =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        drawBehind {
+            drawIntoCanvas { canvas ->
+                val paint = android.graphics.Paint().apply {
+                    isAntiAlias = true
+                    color = fill.toArgb()
+                    setShadowLayer(radius.toPx(), 0f, 0f, shadowColor.toArgb())
+                }
+                canvas.nativeCanvas.drawCircle(size.width / 2, size.height / 2, size.minDimension / 2, paint)
+            }
+        }
+    } else {
+        shadow(radius, CircleShape, clip = false, ambientColor = shadowColor, spotColor = shadowColor).background(fill, CircleShape)
+    }
+
 /** First aid (docs/PLAN.md §3, IOS-M2-10): shown on first AR use, then from the ⋮ menu. A card, not a sheet. */
 @Composable
 private fun SafetyNoteCard(modifier: Modifier = Modifier, dismiss: () -> Unit) {
+    val title = stringResource(R.string.before_you_drill_or_cut)
+    // iOS `.isModal`: the content behind is hidden from TalkBack (ARContent), the card is announced
+    // as a pane, and TalkBack starts on its title.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        focus.requestFocus()
+    }
     Column(
         modifier
             .fillMaxWidth()
-            .background(Palette.surface, RectangleShape)
+            .glass(RectangleShape, GlassMaterial.Regular)
             .padding(20.dp)
-            .semantics { isTraversalGroup = true },
+            .semantics {
+                isTraversalGroup = true
+                paneTitle = title
+            },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier
+                .focusRequester(focus)
+                .focusable()
+                .semantics(mergeDescendants = true) { heading() },
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(Icons.Filled.Warning, contentDescription = null, tint = Palette.warn)
-            Text(stringResource(R.string.before_you_drill_or_cut), style = IvType.headline, color = Palette.ink)
+            Text(title, style = IvType.headline, color = Palette.ink)
         }
         Text(stringResource(R.string.the_model_shows_the_design_always_confirm_before_drilling_or), style = IvType.system(SystemStyle.Body), color = Palette.ink)
         PrimaryActionButton(stringResource(R.string.got_it), onClick = dismiss)
@@ -1492,20 +1587,75 @@ private fun SafetyNoteCard(modifier: Modifier = Modifier, dismiss: () -> Unit) {
 
 /**
  * iOS `ARCoachingOverlayView` with the horizontal-plane goal: shown while placing by hand before
- * the first placement, until the floor is found and tracking is normal.
+ * the first placement, until the floor is found and tracking is normal. As Apple's, it dims the
+ * camera and animates a phone sweeping over the floor, over the camera and under the screen's
+ * chrome; it takes no touches. A still frame when animations are off (iOS Reduce Motion).
  */
 @Composable
-private fun FloorCoachingCard(modifier: Modifier = Modifier) {
-    Row(
-        modifier
-            .padding(horizontal = 32.dp)
-            .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
-            .heightIn(min = 44.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CircularProgressIndicator(Modifier.size(20.dp), color = Palette.muted, strokeWidth = 2.dp)
-        Text(stringResource(R.string.move_the_phone_slowly_over_the_floor), style = IvType.system(SystemStyle.Subheadline, FontWeight.Medium), color = Palette.ink)
+private fun FloorCoachingOverlay(visible: Boolean) {
+    AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
+        val context = LocalContext.current
+        val reduceMotion = remember { isReducedMotion(context) }
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
+            Column(
+                Modifier.padding(horizontal = 32.dp).semantics(mergeDescendants = true) {},
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                val sweep = if (reduceMotion) {
+                    0f
+                } else {
+                    val transition = rememberInfiniteTransition(label = "floorCoaching")
+                    val value by transition.animateFloat(
+                        initialValue = -1f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(tween(durationMillis = 2_000, easing = EaseInOut), RepeatMode.Reverse),
+                        label = "sweep",
+                    )
+                    value
+                }
+                CoachingPhone(sweep)
+                Text(
+                    stringResource(R.string.move_the_phone_slowly_over_the_floor),
+                    style = IvType.system(SystemStyle.Headline),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+/** A phone outline over a flat ground shape, moved [sweep] (−1…1) of the way to either side and tilted with it. */
+@Composable
+private fun CoachingPhone(sweep: Float) {
+    Canvas(Modifier.size(width = 200.dp, height = 132.dp).clearAndSetSemantics {}) {
+        val white = Color.White
+        val stroke = 3.dp.toPx()
+        // The ground: a floor seen at an angle.
+        val groundTop = size.height - 30.dp.toPx()
+        val ground = Path().apply {
+            moveTo(size.width / 2 - 64.dp.toPx(), groundTop)
+            lineTo(size.width / 2 + 64.dp.toPx(), groundTop)
+            lineTo(size.width / 2 + 96.dp.toPx(), size.height - stroke)
+            lineTo(size.width / 2 - 96.dp.toPx(), size.height - stroke)
+            close()
+        }
+        drawPath(ground, white.copy(alpha = 0.25f))
+        drawPath(ground, white.copy(alpha = 0.85f), style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round))
+        // The phone: ±40 dp side to side, tilted up to 10° the way it moves.
+        val phone = Size(40.dp.toPx(), 72.dp.toPx())
+        val centre = Offset(size.width / 2 + sweep * 40.dp.toPx(), groundTop - 12.dp.toPx() - phone.height / 2)
+        rotate(degrees = sweep * 10f, pivot = centre) {
+            val topLeft = Offset(centre.x - phone.width / 2, centre.y - phone.height / 2)
+            drawRoundRect(white, topLeft, phone, CornerRadius(8.dp.toPx()), style = Stroke(width = stroke))
+            drawLine(
+                white,
+                Offset(centre.x - 6.dp.toPx(), topLeft.y + 7.dp.toPx()),
+                Offset(centre.x + 6.dp.toPx(), topLeft.y + 7.dp.toPx()),
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
     }
 }

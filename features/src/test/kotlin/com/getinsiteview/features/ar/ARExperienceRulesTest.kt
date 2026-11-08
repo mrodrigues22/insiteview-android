@@ -7,6 +7,7 @@ import com.getinsiteview.modelkit.ar.PlacementState
 import com.getinsiteview.modelkit.ar.TrackingStatus
 import com.getinsiteview.modelkit.geometry.PlateAnchoring
 import com.getinsiteview.modelkit.geometry.ReferenceAlignment
+import com.getinsiteview.modelkit.geometry.ReferenceFit
 import com.getinsiteview.modelkit.geometry.ReferenceMark
 import com.getinsiteview.modelkit.geometry.ReferencePoint
 import com.getinsiteview.modelkit.geometry.Vec3
@@ -331,14 +332,113 @@ class ARExperienceRulesTest {
         assertEquals(listOf("areaM2", "isFloor", "y"), planes[0].jsonObject.keys.toList())
         val markJSON = root["marks"]!!.jsonArray[0].jsonObject
         assertEquals(listOf("marked", "position", "seenFrom", "surface"), markJSON.keys.toList())
-        assertEquals(listOf("1.235", "0.0", "2.0"), (markJSON["marked"] as JsonArray).map { it.jsonPrimitive.content })
-        assertEquals(listOf("1.235", "0.01", "2.0"), (markJSON["position"] as JsonArray).map { it.jsonPrimitive.content })
+        // JSONSerialization writes whole numbers without a fraction.
+        assertEquals(listOf("1.235", "0", "2"), (markJSON["marked"] as JsonArray).map { it.jsonPrimitive.content })
+        assertEquals(listOf("1.235", "0.01", "2"), (markJSON["position"] as JsonArray).map { it.jsonPrimitive.content })
         assertEquals("floor", markJSON["surface"]!!.jsonPrimitive.content)
         val room = root["room"] as JsonObject
         assertEquals(listOf("floorY", "hasOutline", "id", "name"), room.keys.toList())
         assertEquals("Kitchen", room["name"]!!.jsonPrimitive.content)
         val reference = root["references"]!!.jsonArray[0].jsonObject
         assertEquals("corner", reference["kind"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `copied details are written as iOS's JSONSerialization writes them`() {
+        val json = ARExperienceRules.copyDetailsJSON(
+            room = ARExperienceRules.RoomDetails(id = "e1", name = "Bath/WC", hasOutline = false, floorY = null),
+            worldFloorY = null,
+            floorPlanes = emptyList(),
+            cameraY = 1.5,
+            references = emptyList(),
+            marks = emptyList(),
+            marksOnFloor = emptyList(),
+            outcome = ReferenceAlignment.Outcome.NeedsMore(ReferenceAlignment.Hint.MORE_POINTS),
+        )
+        val expected = """
+            {
+              "cameraY" : 1.5,
+              "floorPlanes" : [
+
+              ],
+              "marks" : [
+
+              ],
+              "outcome" : "needsMore(IVModelKit.ReferenceAlignment.Hint.morePoints)",
+              "references" : [
+
+              ],
+              "room" : {
+                "floorY" : null,
+                "hasOutline" : false,
+                "id" : "e1",
+                "name" : "Bath\/WC"
+              },
+              "worldFloorY" : null
+            }
+        """.trimIndent()
+        assertEquals(expected, json)
+    }
+
+    @Test
+    fun `outcomes are described as Swift's String(describing:) writes them`() {
+        assertEquals(
+            "needsMore(IVModelKit.ReferenceAlignment.Hint.anotherWall)",
+            ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.NeedsMore(ReferenceAlignment.Hint.ANOTHER_WALL)),
+        )
+        assertEquals(
+            "noMatch(IVModelKit.ReferenceAlignment.NoMatch.tooFar)",
+            ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.NoMatch(ReferenceAlignment.NoMatch.TOO_FAR)),
+        )
+        val corner = ReferencePoint(id = "corner-0", kind = ReferencePoint.Kind.CORNER, position = Vec3(0.5, 0.0, 0.25), elementID = null, height = 0.0)
+        val fit = ReferenceFit(
+            transform = YawTransform(yaw = 0.5, translation = Vec3(1.0, 0.0, -2.25)),
+            matches = listOf(ReferenceFit.Match(markIndex = 0, reference = corner, residual = 0.012)),
+            rms = 0.1 + 0.2,
+            dropped = ReferenceFit.Dropped(markIndex = 2, nearest = null, distance = Double.POSITIVE_INFINITY),
+        )
+        val described = "IVModelKit.ReferenceFit(transform: IVModelKit.YawTransform(yaw: 0.5, translation: SIMD3<Double>(1.0, 0.0, -2.25)), " +
+            "matches: [IVModelKit.ReferenceFit.Match(markIndex: 0, reference: IVModelKit.ReferencePoint(id: \"corner-0\", " +
+            "kind: IVModelKit.ReferencePoint.Kind.corner, position: SIMD3<Double>(0.5, 0.0, 0.25), elementID: nil, height: 0.0, " +
+            "normal: nil, halfLength: 0.0), residual: 0.012)], rms: 0.30000000000000004, " +
+            "dropped: Optional(IVModelKit.ReferenceFit.Dropped(markIndex: 2, nearest: nil, distance: inf)), markCentre: nil)"
+        assertEquals("matched($described)", ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.Matched(fit)))
+        assertEquals("ambiguous([$described, $described])", ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.Ambiguous(listOf(fit, fit))))
+        // A wall among the matches: `markCentre` is the fit's centre.
+        val wall = ReferencePoint(
+            id = "wall-1", kind = ReferencePoint.Kind.WALL, position = Vec3(0.0, 0.0, 1.0), elementID = "e'1",
+            height = 0.0, normal = Vec3(0.0, 0.0, -1.0), halfLength = 1.5,
+        )
+        val wallFit = ReferenceFit(
+            transform = YawTransform(yaw = 0.0, translation = Vec3.zero),
+            matches = listOf(ReferenceFit.Match(markIndex = 0, reference = wall, residual = 0.0)),
+            rms = 0.0,
+            dropped = null,
+        )
+        assertEquals(
+            "matched(IVModelKit.ReferenceFit(transform: IVModelKit.YawTransform(yaw: 0.0, translation: SIMD3<Double>(0.0, 0.0, 0.0)), " +
+                "matches: [IVModelKit.ReferenceFit.Match(markIndex: 0, reference: IVModelKit.ReferencePoint(id: \"wall-1\", " +
+                "kind: IVModelKit.ReferencePoint.Kind.wall, position: SIMD3<Double>(0.0, 0.0, 1.0), elementID: Optional(\"e\\'1\"), " +
+                "height: 0.0, normal: Optional(SIMD3<Double>(0.0, 0.0, -1.0)), halfLength: 1.5), residual: 0.0)], rms: 0.0, " +
+                "dropped: nil, markCentre: Optional(SIMD3<Double>(0.0, 0.0, 1.0))))",
+            ARExperienceRules.outcomeDescription(ReferenceAlignment.Outcome.Matched(wallFit)),
+        )
+    }
+
+    @Test
+    fun `doubles are written as Swift's description writes them`() {
+        assertEquals("1.0", ARExperienceRules.swiftDouble(1.0))
+        assertEquals("-0.0", ARExperienceRules.swiftDouble(-0.0))
+        assertEquals("300.0", ARExperienceRules.swiftDouble(300.0))
+        assertEquals("0.1", ARExperienceRules.swiftDouble(0.1))
+        assertEquals("-2.25", ARExperienceRules.swiftDouble(-2.25))
+        assertEquals("0.30000000000000004", ARExperienceRules.swiftDouble(0.1 + 0.2))
+        assertEquals("0.0001", ARExperienceRules.swiftDouble(0.0001))
+        assertEquals("1e-05", ARExperienceRules.swiftDouble(0.00001))
+        assertEquals("-1.5e-07", ARExperienceRules.swiftDouble(-1.5e-7))
+        assertEquals("3.141592653589793", ARExperienceRules.swiftDouble(Math.PI))
+        assertEquals("inf", ARExperienceRules.swiftDouble(Double.POSITIVE_INFINITY))
+        assertEquals("nan", ARExperienceRules.swiftDouble(Double.NaN))
     }
 
     @Test

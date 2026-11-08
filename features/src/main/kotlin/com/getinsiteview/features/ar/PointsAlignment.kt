@@ -1,9 +1,10 @@
 package com.getinsiteview.features.ar
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
@@ -46,16 +49,19 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.getinsiteview.ar.ARAlignmentView
+import com.getinsiteview.design.GlassMaterial
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
 import com.getinsiteview.design.SystemStyle
+import com.getinsiteview.design.glass
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.modelkit.Manifest
@@ -365,7 +371,7 @@ class PointsAlignment(
             references = references,
             marks = marks,
             marksOnFloor = marksOnFloor,
-            outcome = lastOutcome?.toString(),
+            outcome = lastOutcome,
         )
         copyToClipboard(json)
         detailsCopied = true
@@ -439,7 +445,7 @@ fun PointsCrosshair(state: CrosshairState, capturing: Boolean = false) {
                     val placeable = measurable.measure(constraints)
                     layout(placeable.width, placeable.height) { placeable.place(0, placeable.height / 2) }
                 }
-                .background(Palette.surface.copy(alpha = 0.85f), RectangleShape)
+                .glass(RectangleShape, GlassMaterial.UltraThin)
                 .padding(horizontal = 10.dp, vertical = 4.dp),
         )
     }
@@ -473,7 +479,7 @@ fun PointsAlignmentPanel(alignment: PointsAlignment, confirm: (ReferenceFit) -> 
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.95f), RectangleShape)
+            .glass(RectangleShape, GlassMaterial.Regular)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -508,16 +514,19 @@ private fun RoomPicker(alignment: PointsAlignment, cancel: () -> Unit) {
     }
 }
 
-/** A small accent link ("Cancel", "Mark another corner"). */
+/** A small accent link ("Cancel", "Mark another corner"): an iOS borderless button, dimmed while pressed, no ripple. */
 @Composable
 internal fun TextLink(text: String, onClick: () -> Unit, enabled: Boolean = true) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Text(
         text,
         style = IvType.system(SystemStyle.Footnote, FontWeight.SemiBold),
         color = if (enabled) Palette.accent else Palette.muted,
         modifier = Modifier
             .heightIn(min = 32.dp)
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .alpha(if (pressed) 0.6f else 1f)
             .padding(vertical = 6.dp),
     )
 }
@@ -527,12 +536,16 @@ internal fun TextLink(text: String, onClick: () -> Unit, enabled: Boolean = true
 private fun RoomLine(alignment: PointsAlignment) {
     var expanded by remember { mutableStateOf(false) }
     val changeRoom = stringResource(R.string.change_room)
+    // iOS `Menu` label: dims while pressed, no ripple.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box {
             Row(
                 Modifier
                     .heightIn(min = 36.dp)
-                    .clickable(onClickLabel = changeRoom, onClick = { expanded = true }),
+                    .clickable(interactionSource = interaction, indication = null, onClickLabel = changeRoom, role = Role.Button, onClick = { expanded = true })
+                    .alpha(if (pressed) 0.6f else 1f),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -562,7 +575,8 @@ private fun RoomLine(alignment: PointsAlignment) {
             counter,
             style = IvType.system(SystemStyle.Subheadline, monospacedDigits = true),
             color = Palette.muted,
-            modifier = Modifier.combinedClickable(onClick = {}, onLongClick = { alignment.copyDetails() }),
+            // iOS `.onLongPressGesture`: no press feedback.
+            modifier = Modifier.combinedClickable(interactionSource = null, indication = null, onClick = {}, onLongClick = { alignment.copyDetails() }),
         )
     }
 }
@@ -589,6 +603,8 @@ private fun Marking(alignment: PointsAlignment, cancel: () -> Unit) {
                     onClick = { alignment.undo() },
                     enabled = alignment.marks.isNotEmpty() && !alignment.capturing,
                     modifier = Modifier.weight(1f),
+                    // iOS `Label("Undo", systemImage: "arrow.uturn.backward")`.
+                    icon = Icons.AutoMirrored.Outlined.Undo,
                 )
                 PrimaryActionButton(
                     text = stringResource(if (alignment.capturing) R.string.hold_still else R.string.mark),

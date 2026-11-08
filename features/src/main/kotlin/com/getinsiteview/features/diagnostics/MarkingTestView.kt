@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,17 +19,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -55,9 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.getinsiteview.ar.ARAlignmentScene
 import com.getinsiteview.ar.ARAlignmentView
+import com.getinsiteview.design.GlassMaterial
+import com.getinsiteview.design.IvGlassButton
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.SystemStyle
+import com.getinsiteview.design.glass
+import com.getinsiteview.features.ar.ARCoreGate
 import com.getinsiteview.features.ar.IntHolder
 import com.getinsiteview.features.ar.PointsCrosshair
 import com.getinsiteview.modelkit.ar.CrosshairState
@@ -261,6 +261,14 @@ class MarkingTestModel(context: Context) {
  */
 @Composable
 fun MarkingTestView(onClose: () -> Unit) {
+    // As the AR experience: ARCore must be installed (Android only) before the camera is asked for.
+    ARCoreGate(onClose = onClose) {
+        MarkingTestPermission(onClose)
+    }
+}
+
+@Composable
+private fun MarkingTestPermission(onClose: () -> Unit) {
     val context = LocalContext.current
     var granted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
@@ -302,7 +310,7 @@ private fun MarkingTestContent(onClose: () -> Unit) {
                     "Tracking: ${model.tracking.swiftName}",
                     style = IvType.caption,
                     color = Palette.ink,
-                    modifier = Modifier.background(Palette.surface.copy(alpha = 0.85f), RoundedCornerShape(50)).padding(8.dp),
+                    modifier = Modifier.glass(RoundedCornerShape(percent = 50), GlassMaterial.UltraThin).padding(8.dp),
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -311,14 +319,10 @@ private fun MarkingTestContent(onClose: () -> Unit) {
     }
 }
 
+/** iOS: a plain button on `.ultraThinMaterial` in a circle. */
 @Composable
 private fun CloseButton(onClose: () -> Unit) {
-    Box(
-        Modifier.size(44.dp).background(Palette.surface.copy(alpha = 0.85f), CircleShape).clickable(onClick = onClose),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(Icons.Filled.Close, contentDescription = "Close", tint = Palette.ink)
-    }
+    IvGlassButton(Icons.Filled.Close, contentDescription = "Close", onClick = onClose, tint = Palette.ink, material = GlassMaterial.UltraThin)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -337,7 +341,7 @@ private fun Panel(model: MarkingTestModel) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Palette.surface.copy(alpha = 0.95f), RoundedCornerShape(16.dp))
+            .glass(RoundedCornerShape(16.dp), GlassMaterial.Regular)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
