@@ -4,6 +4,8 @@
 > is `insiteview-api/docs/PLAN.md` (M7 · Android app); § numbers without a repo refer to it. The
 > iPhone app (`insiteview-ios/docs/PLAN.md`) is the functional spec: this app does what it does,
 > screen for screen. The differences are in §6, each with its reason.
+> `docs/IOS-PARITY-PLAN.md` is the screen-by-screen spec (UX, UI, features) read from the iOS code, with
+> the parity audit of this port, the backlog and the milestones to release.
 
 Someone scans a plate with an Android phone and sees the building's systems aligned in their room.
 With the app installed, the printed URL opens it directly (App Links); without it, the web viewer
