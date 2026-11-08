@@ -83,7 +83,8 @@ class GuestPreferences(private val store: KeyValueStore) {
 
 /**
  * The web → app handoff (docs/PLAN.md §3 "Guest entry", §6: Android has no App Clip). The web's
- * "Get the app" opens Google Play with `referrer=code=8K29X7&plate=2`; on its first launch the app
+ * "Get the app" opens Google Play with `referrer=code=8K29X7&plate=2` (a plate page) or
+ * `referrer=token=…` (a temporary link); on its first launch the app
  * reads the Play Install Referrer once ([saveReferrer]) and opens that building ([take], once),
  * as the iOS app does with the App Clip's App Group handoff.
  *
@@ -92,11 +93,16 @@ class GuestPreferences(private val store: KeyValueStore) {
  */
 class BuildingHandoff(private val store: KeyValueStore) {
     @Serializable
-    private data class Stored(val code: String, val plate: Int? = null, val savedAt: Long)
+    private data class Stored(val code: String? = null, val plate: Int? = null, val token: String? = null, val savedAt: Long)
 
     /** Remember this building (and plate) for the next [take]. */
     suspend fun save(code: BuildingCode, plate: Int?, at: Instant = Instant.now()) {
-        store.putString(KEY, json.encodeToString(Stored.serializer(), Stored(code.raw, plate, at.toEpochMilli())))
+        store.putString(KEY, json.encodeToString(Stored.serializer(), Stored(code = code.raw, plate = plate, savedAt = at.toEpochMilli())))
+    }
+
+    /** Remember this temporary link for the next [take]. */
+    suspend fun save(link: DeepLink.AccessLink, at: Instant = Instant.now()) {
+        store.putString(KEY, json.encodeToString(Stored.serializer(), Stored(token = link.token, savedAt = at.toEpochMilli())))
     }
 
     /** Whether [saveReferrer] already ran on this install. */
@@ -110,12 +116,16 @@ class BuildingHandoff(private val store: KeyValueStore) {
      * @param referrer `ReferrerDetails.installReferrer`.
      * @param at when the user asked for the app: `referrerClickTimestampSeconds` when it's set,
      *   else `installBeginTimestampSeconds`, else now.
-     * @return the building saved, if any.
+     * @return the building or link saved, if any.
      */
-    suspend fun saveReferrer(referrer: String?, at: Instant = Instant.now()): DeepLink.Building? {
+    suspend fun saveReferrer(referrer: String?, at: Instant = Instant.now()): DeepLink? {
         if (hasReadReferrer()) return null
         val link = parseReferrer(referrer)
-        if (link != null) save(link.code, link.plate, at)
+        when (link) {
+            is DeepLink.Building -> save(link.code, link.plate, at)
+            is DeepLink.AccessLink -> save(link, at)
+            null -> Unit
+        }
         store.putString(REFERRER_READ_KEY, "true")
         return link
     }
@@ -131,8 +141,9 @@ class BuildingHandoff(private val store: KeyValueStore) {
         } catch (_: IllegalArgumentException) {
             return null
         }
-        val code = BuildingCode.parse(value.code) ?: return null
         if ((now.toEpochMilli() - value.savedAt).milliseconds > MAX_AGE) return null
+        value.token?.let { token -> return if (Router.isAccessToken(token)) DeepLink.AccessLink(token) else null }
+        val code = value.code?.let(BuildingCode::parse) ?: return null
         return DeepLink.Building(code, plate = value.plate?.takeIf { it > 0 })
     }
 
@@ -146,13 +157,14 @@ class BuildingHandoff(private val store: KeyValueStore) {
         private val json = Json { ignoreUnknownKeys = true }
 
         /**
-         * Parses an Install Referrer: a URL-encoded query such as `code=8K29X7&plate=2`. `code` is
-         * required and must be a [BuildingCode] (raw or display form); `plate` is optional and
-         * dropped unless it's a positive decimal integer; other parameters are ignored, and the
-         * first occurrence of a parameter wins. A referrer encoded once more
-         * (`code%3D8K29X7%26plate%3D2`) is accepted too.
+         * Parses an Install Referrer: a URL-encoded query such as `code=8K29X7&plate=2` (a plate
+         * page) or `token=…` (a temporary link, `/a/{token}`). A `code` must be a [BuildingCode]
+         * (raw or display form); `plate` is optional and dropped unless it's a positive decimal
+         * integer. A `token` must be URL-unreserved characters, and is used only without a `code`.
+         * Other parameters are ignored, and the first occurrence of a parameter wins. A referrer
+         * encoded once more (`code%3D8K29X7%26plate%3D2`) is accepted too.
          */
-        fun parseReferrer(referrer: String?): DeepLink.Building? {
+        fun parseReferrer(referrer: String?): DeepLink? {
             var query = referrer?.trim()?.removePrefix("?") ?: return null
             if ('=' !in query && query.contains("%3D", ignoreCase = true)) {
                 query = decode(query) ?: return null
@@ -164,6 +176,9 @@ class BuildingHandoff(private val store: KeyValueStore) {
                 val name = decode(if (separator < 0) pair else pair.substring(0, separator)) ?: continue
                 val value = if (separator < 0) "" else decode(pair.substring(separator + 1)) ?: continue
                 parameters.putIfAbsent(name, value)
+            }
+            if (parameters["code"] == null) {
+                return parameters["token"]?.takeIf(Router::isAccessToken)?.let(DeepLink::AccessLink)
             }
             val code = parameters["code"]?.let(BuildingCode::parse) ?: return null
             return DeepLink.Building(code, plate = parameters["plate"]?.let(Router::plateNumber))

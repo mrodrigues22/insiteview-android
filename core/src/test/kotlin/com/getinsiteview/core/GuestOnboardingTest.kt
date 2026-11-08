@@ -87,6 +87,22 @@ class GuestOnboardingTest {
     }
 
     @Test
+    fun `Install Referrer - a temporary link's token`() = blocking {
+        assertEquals(DeepLink.AccessLink("link-Token_1.x~"), BuildingHandoff.parseReferrer("token=link-Token_1.x~"))
+        assertEquals(DeepLink.AccessLink("abc"), BuildingHandoff.parseReferrer("token%3Dabc"))
+        // A code wins over a token; a bad token names nothing.
+        assertEquals(DeepLink.Building(code, plate = null), BuildingHandoff.parseReferrer("token=abc&code=8K29X7"))
+        assertNull(BuildingHandoff.parseReferrer("token="))
+        assertNull(BuildingHandoff.parseReferrer("token=a%2Fb"))
+
+        val handoff = BuildingHandoff(InMemoryKeyValueStore())
+        val clickedAt = Instant.ofEpochSecond(1_790_856_900)
+        assertEquals(DeepLink.AccessLink("abc"), handoff.saveReferrer("token=abc", at = clickedAt))
+        assertEquals(DeepLink.AccessLink("abc"), handoff.take(now = clickedAt.plusSeconds(60)))
+        assertNull(handoff.take(now = clickedAt.plusSeconds(61)))
+    }
+
+    @Test
     fun `Install Referrer - read once per install, then taken once`() = blocking {
         val store = InMemoryKeyValueStore()
         val handoff = BuildingHandoff(store)

@@ -4460,6 +4460,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "codeChallenge",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6272,7 +6279,7 @@
         "tags": [
           "Billing"
         ],
-        "summary": "A checkout for activating buildings (exactly the credits they need) or for a credit pack: Stripe for USD, Asaas (Pix, boleto, card) for BRL.",
+        "summary": "A checkout for activating buildings (exactly the credits they need) or for a credit pack, on Stripe's page: card, and Pix in BRL.",
         "operationId": "billing_checkout",
         "parameters": [
           {
@@ -6800,57 +6807,6 @@
         },
         "description": "string? AuthResponse.RefreshToken is only returned to native clients. With the `X-Client: web` header the\nrefresh token is set as an HttpOnly cookie on `/v1/auth` instead."
       },
-      "BillingDetailsRequest": {
-        "required": [
-          "legalName",
-          "taxId",
-          "postalCode",
-          "addressNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "legalName": {
-            "maxLength": 200,
-            "type": "string"
-          },
-          "taxId": {
-            "maxLength": 30,
-            "type": "string"
-          },
-          "postalCode": {
-            "maxLength": 12,
-            "type": "string"
-          },
-          "addressNumber": {
-            "maxLength": 20,
-            "type": "string"
-          }
-        },
-        "description": "Who Brazilian invoices (NFS-e) are made out to. string BillingDetailsRequest.TaxId is a CPF or CNPJ (numeric or alphanumeric),\npunctuation allowed; string BillingDetailsRequest.PostalCode is the CEP; string BillingDetailsRequest.AddressNumber may be \"S/N\"."
-      },
-      "BillingDetailsResponse": {
-        "required": [
-          "legalName",
-          "taxId",
-          "postalCode",
-          "addressNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "legalName": {
-            "type": "string"
-          },
-          "taxId": {
-            "type": "string"
-          },
-          "postalCode": {
-            "type": "string"
-          },
-          "addressNumber": {
-            "type": "string"
-          }
-        }
-      },
       "BillingResponse": {
         "required": [
           "balance",
@@ -6859,9 +6815,7 @@
           "trial",
           "ledger",
           "activations",
-          "paymentsEnabled",
-          "provider",
-          "billingDetailsRequired"
+          "paymentsEnabled"
         ],
         "type": "object",
         "properties": {
@@ -6892,15 +6846,9 @@
           },
           "paymentsEnabled": {
             "type": "boolean"
-          },
-          "provider": {
-            "$ref": "#/components/schemas/PaymentProvider"
-          },
-          "billingDetailsRequired": {
-            "type": "boolean"
           }
         },
-        "description": "bool BillingResponse.LowCredits: 2 or fewer left after buying some (\"Buy 10 and save 15%\"). PaymentProvider BillingResponse.Provider takes\nthe organization's payments; bool BillingResponse.BillingDetailsRequired: Asaas needs the invoice details first."
+        "description": "bool BillingResponse.LowCredits: 2 or fewer left after buying some (\"Buy 10 and save 15%\")."
       },
       "BuildingAnalyticsResponse": {
         "required": [
@@ -7341,26 +7289,6 @@
         ],
         "type": "string"
       },
-      "CheckoutPix": {
-        "required": [
-          "payload",
-          "expiresAt"
-        ],
-        "type": "object",
-        "properties": {
-          "payload": {
-            "type": "string"
-          },
-          "expiresAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        },
-        "description": "The Pix \"copia e cola\" code (the app draws the QR from it) and until when the QR code works."
-      },
       "CheckoutResponse": {
         "required": [
           "id",
@@ -7373,7 +7301,6 @@
           "url",
           "createdAt",
           "completedAt",
-          "provider",
           "expiresAt"
         ],
         "type": "object",
@@ -7424,18 +7351,12 @@
             ],
             "format": "date-time"
           },
-          "provider": {
-            "$ref": "#/components/schemas/PaymentProvider"
-          },
           "expiresAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "pix": {
-            "$ref": "#/components/schemas/CheckoutPix"
           }
         },
-        "description": "Uri? CheckoutResponse.Url: Stripe's checkout page, or Asaas's invoice page (boleto and card). CheckoutPix? CheckoutResponse.Pix is set for\nopen Asaas checkouts when Pix is available. Unpaid after DateTimeOffset CheckoutResponse.ExpiresAt, it becomes Expired."
+        "description": "Uri? CheckoutResponse.Url: Stripe's checkout page (card; card and Pix in BRL). Unpaid after DateTimeOffset CheckoutResponse.ExpiresAt, it\nbecomes Expired."
       },
       "CheckoutStatus": {
         "enum": [
@@ -8808,8 +8729,7 @@
           "buildingId",
           "buildingName",
           "note",
-          "createdAt",
-          "invoiceUrl"
+          "createdAt"
         ],
         "type": "object",
         "properties": {
@@ -8846,16 +8766,8 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "invoiceUrl": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uri"
           }
-        },
-        "description": "Uri? LedgerRow.InvoiceUrl: the NFS-e PDF of a purchase, once the city has authorized it."
+        }
       },
       "LinkDuration": {
         "enum": [
@@ -9763,6 +9675,13 @@
               "null",
               "string"
             ]
+          },
+          "codeVerifier": {
+            "maxLength": 128,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9839,9 +9758,6 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "billing": {
-            "$ref": "#/components/schemas/BillingDetailsResponse"
           }
         }
       },
@@ -10082,14 +9998,6 @@
             "format": "date-time"
           }
         }
-      },
-      "PaymentProvider": {
-        "enum": [
-          "Stripe",
-          "Asaas"
-        ],
-        "type": "string",
-        "description": "Who takes the money (PLAN §11): Asaas for BRL (Pix, boleto, card), Stripe for USD (card)."
       },
       "PinResponse": {
         "required": [
@@ -11406,9 +11314,6 @@
               "boolean"
             ]
           },
-          "billing": {
-            "$ref": "#/components/schemas/BillingDetailsRequest"
-          },
           "timeZone": {
             "maxLength": 64,
             "type": [
@@ -11728,8 +11633,7 @@
           "Other",
           "AndroidApp"
         ],
-        "type": "string",
-        "description": "Where a visit was opened. New values are only ever appended."
+        "type": "string"
       },
       "VisitResponse": {
         "required": [

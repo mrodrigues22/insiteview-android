@@ -224,10 +224,10 @@ suspend fun ApiClient.oauthProviders(): List<String> =
  * `POST /v1/auth/oauth/exchange`: the one-time code from the provider redirect (valid 60 s) →
  * tokens. `auth.token_invalid` when it expired or was used.
  */
-suspend fun ApiClient.exchangeOAuthCode(code: String, deviceName: String?): AuthResponse = send(
+suspend fun ApiClient.exchangeOAuthCode(code: String, deviceName: String?, codeVerifier: String? = null): AuthResponse = send(
     jsonEndpoint(
         "auth_oauth_exchange", "POST", listOf("v1", "auth", "oauth", "exchange"), AuthResponse.serializer(),
-        body = encode(OAuthExchangeRequest.serializer(), OAuthExchangeRequest(code, deviceName)),
+        body = encode(OAuthExchangeRequest.serializer(), OAuthExchangeRequest(code, deviceName, codeVerifier)),
     ),
 )
 

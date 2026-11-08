@@ -69,7 +69,6 @@ class ApiContractTest {
         MySearchBuilding.serializer() to "MySearchBuilding",
         MySearchHit.serializer() to "MySearchHit",
         Organization.serializer() to "OrganizationResponse",
-        BillingDetailsResponse.serializer() to "BillingDetailsResponse",
         BuildingDetail.serializer() to "BuildingResponse",
         BuildingPlate.serializer() to "PlateResponse",
         UpdatePlateRequest.serializer() to "UpdatePlateRequest",

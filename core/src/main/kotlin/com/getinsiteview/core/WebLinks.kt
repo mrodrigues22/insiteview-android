@@ -63,8 +63,8 @@ data class PlayStoreLink private constructor(val packageName: String) {
 }
 
 /**
- * The terms version accepted when an account is created (register, or a first Apple, Google or
- * Microsoft sign-in). Same value as the web's `TERMS_VERSION`; the API stores it with the date.
+ * The terms version accepted when an account is created (register, or a first Google or Microsoft
+ * sign-in; Apple on iOS). Same value as the web's `TERMS_VERSION`; the API stores it with the date.
  */
 object TermsVersion {
     const val CURRENT = "2026-09"

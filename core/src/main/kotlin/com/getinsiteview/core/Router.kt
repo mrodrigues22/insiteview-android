@@ -87,6 +87,9 @@ class Router(additionalHost: String? = null) {
             return if (number > 0) number else null
         }
 
+        /** An access link's token: non-empty, URL-unreserved characters only. */
+        internal fun isAccessToken(token: String): Boolean = token.isNotEmpty() && token.all(::isTokenCharacter)
+
         /** Tokens are opaque; only URL-unreserved characters (RFC 3986) are allowed. */
         private fun isTokenCharacter(character: Char): Boolean =
             character in 'a'..'z' || character in 'A'..'Z' || character in '0'..'9' || character in "-._~"

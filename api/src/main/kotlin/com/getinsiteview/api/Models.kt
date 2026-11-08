@@ -224,7 +224,7 @@ data class RegisterRequest(
 data class RefreshRequest(val refreshToken: String?)
 
 @Serializable
-data class OAuthExchangeRequest(val code: String, val deviceName: String?)
+data class OAuthExchangeRequest(val code: String, val deviceName: String?, val codeVerifier: String? = null)
 
 @Serializable
 data class OAuthProvidersResponse(val providers: List<String>)
@@ -360,13 +360,9 @@ data class Organization(
     val logoUrl: String?,
     val role: OrganizationRole,
     @Serializable(with = ISO8601InstantSerializer::class) val createdAt: Instant,
-    val billing: BillingDetailsResponse? = null,
 ) {
     val organizationID: UUID? get() = uuidOrNull(id)
 }
-
-@Serializable
-data class BillingDetailsResponse(val legalName: String, val taxId: String, val postalCode: String, val addressNumber: String)
 
 /** `GET /v1/buildings/{id}` (members): status, expiry, role (`BuildingResponse`). */
 @Serializable
