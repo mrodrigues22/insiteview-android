@@ -13,6 +13,9 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.os.Build
 import android.os.PowerManager
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.getinsiteview.modelkit.Manifest
 import com.getinsiteview.modelkit.ar.ARAlignmentLogic
 import com.getinsiteview.modelkit.ar.ARSessionSettings
@@ -27,6 +30,7 @@ import com.getinsiteview.modelkit.ar.FrameSample
 import com.getinsiteview.modelkit.ar.PlateImageName
 import com.getinsiteview.modelkit.ar.Ray
 import com.getinsiteview.modelkit.ar.ScreenGeometry
+import com.getinsiteview.modelkit.ar.SingleImageTracking
 import com.getinsiteview.modelkit.ar.TrackingStatus
 import com.getinsiteview.modelkit.ar.fromAnchorTransform
 import com.getinsiteview.modelkit.ar.matrix
@@ -37,6 +41,7 @@ import com.getinsiteview.modelkit.geometry.LidarAim
 import com.getinsiteview.modelkit.geometry.PlateFrame
 import com.getinsiteview.modelkit.geometry.Vec2
 import com.getinsiteview.modelkit.geometry.Vec3
+import com.getinsiteview.modelkit.geometry.Vector
 import com.getinsiteview.modelkit.geometry.YawTransform
 import com.getinsiteview.scene.BuildingScene
 import com.getinsiteview.scene.SceneEngine
@@ -174,6 +179,8 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         config.planeFindingMode = if (settings.findsVerticalPlanes) Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL else Config.PlaneFindingMode.HORIZONTAL
         config.lightEstimationMode = if (settings.estimatesLight) Config.LightEstimationMode.ENVIRONMENTAL_HDR else Config.LightEstimationMode.DISABLED
         config.depthMode = if (depthEnabled) Config.DepthMode.AUTOMATIC else Config.DepthMode.DISABLED
+        // iOS raycasts `estimatedPlane` too: a floor tap places the model before a plane is found.
+        config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
         val names = settings.imageNames.filter { images.containsKey(it) }
         if (names != databaseNames || forgetRequested) {
             val database = AugmentedImageDatabase(session)
@@ -188,6 +195,7 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
             config.augmentedImageDatabase = database
             databaseNames = names
             forgetRequested = false
+            followedImage = null
         }
     }
 
@@ -199,9 +207,34 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         forgetRequested = true
     }
 
+    /** Hot: the AR view renders with SceneView's Performance preset (no SSAO, bloom; dynamic resolution). */
+    var thermalRenderLimited: Boolean by mutableStateOf(false)
+        private set
+
+    private var choosingCameraConfig = false
+
+    override fun thermalLimitChanged(limited: Boolean) {
+        thermalRenderLimited = limited
+        if (choosingCameraConfig || !isRunning) return
+        val session = liveSession ?: return
+        // ARCore changes the camera format only while paused, which would lose an alignment: at once
+        // when nothing is aligned yet, else at the session's next start (docs/PLAN.md §6).
+        if (!canChangeCameraFormatNow) return
+        runCatching {
+            session.pause()
+            session.cameraConfig = chooseCameraConfig(session)
+            session.resume()
+        }.onFailure { onSessionFailed?.invoke(it as? Exception ?: RuntimeException(it)) }
+    }
+
     /** The camera format: ARCore's default, or when hot the smallest at 30 fps or less (iOS `coolVideoFormat`). */
     internal fun chooseCameraConfig(session: Session): CameraConfig {
-        thermalStateChanged(isHot())
+        choosingCameraConfig = true
+        try {
+            thermalStateChanged(isHot())
+        } finally {
+            choosingCameraConfig = false
+        }
         if (!thermalLimited) return session.cameraConfig
         return runCatching {
             val configs = session.getSupportedCameraConfigs(CameraConfigFilter(session).setFacingDirection(CameraConfig.FacingDirection.BACK))
@@ -301,6 +334,16 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         )
     }
 
+    /** The plate image whose poses feed the alignment ([SingleImageTracking]). */
+    private var followedImage: String? = null
+
+    private fun distance(a: Pose, b: Pose): Double {
+        val dx = a.tx() - b.tx()
+        val dy = a.ty() - b.ty()
+        val dz = a.tz() - b.tz()
+        return Math.sqrt((dx * dx + dy * dy + dz * dz).toDouble())
+    }
+
     /** iOS `AnchorChange(anchors:)`: horizontal planes, fully tracked images, moved site anchors, removals. */
     private fun anchorChange(frame: Frame): AnchorChange {
         var hasHorizontalPlane = false
@@ -317,10 +360,18 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
             FloorPlanes.candidate(height = plane.centerPose.ty().toDouble(), area = area)?.let { floors += AnchorChange.Floor(plane, it) }
         }
         val detected = ArrayList<AnchorChange.Image>()
+        // One image at a time, as ARKit with maximumNumberOfTrackedImages = 1.
+        val camera = frame.camera.pose
+        val fullyTracked = session?.getAllTrackables(AugmentedImage::class.java).orEmpty()
+            .filter { it.trackingState == TrackingState.TRACKING && it.trackingMethod == AugmentedImage.TrackingMethod.FULL_TRACKING }
+            .mapNotNull { image -> image.name?.let { it to distance(image.centerPose, camera) } }
+            .toMap()
+        followedImage = SingleImageTracking.choose(followedImage, fullyTracked)
         for (image in frame.getUpdatedTrackables(AugmentedImage::class.java)) {
             // Only full tracking feeds the smoother: a last known pose would poison its window.
             if (image.trackingState != TrackingState.TRACKING || image.trackingMethod != AugmentedImage.TrackingMethod.FULL_TRACKING) continue
             val name = image.name ?: continue
+            if (name != followedImage) continue
             val matrix = FloatArray(16)
             image.centerPose.toMatrix(matrix, 0)
             detected += AnchorChange.Image(name, PlateFrame.fromAnchorTransform(matrix))
@@ -508,9 +559,24 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
         val inside = hits.firstOrNull { hit -> (hit.trackable as? Plane)?.let { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING && it.isPoseInPolygon(hit.hitPose) } == true }
         val beyond = hits.firstOrNull { hit -> (hit.trackable as? Plane)?.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
         val depth = hits.firstOrNull { hit -> hit.trackable is DepthPoint && hit.hitPose.yAxis[1] >= UP_DOT }
-        val hit = inside ?: beyond ?: depth ?: return null
+        val hit = inside ?: beyond ?: depth ?: instantPlacementHit(x, y) ?: return null
         val pose = hit.hitPose
         return Vec3(pose.tx().toDouble(), pose.ty().toDouble(), pose.tz().toDouble())
+    }
+
+    /**
+     * iOS's `estimatedPlane` before any plane is found: ARCore Instant Placement, at the distance the
+     * floor would be if the phone is held at [HELD_HEIGHT] (refined by ARCore as it tracks).
+     */
+    private fun instantPlacementHit(x: Double, y: Double): HitResult? {
+        if (liveSession == null) return null
+        val frame = latestFrame ?: return null
+        if (frame.camera.trackingState != TrackingState.TRACKING) return null
+        val ray = screenRay(x, y) ?: return null
+        val down = -Vector.normalized(ray.direction).y
+        if (down < MIN_DOWN) return null
+        val distance = (HELD_HEIGHT / down).toFloat()
+        return runCatching { frame.hitTestInstantPlacement(x.toFloat(), y.toFloat(), distance) }.getOrDefault(emptyList()).firstOrNull()
     }
 
     /**
@@ -679,9 +745,15 @@ class ARAlignmentView(context: Context) : ARAlignmentLogic() {
          * a back camera reporting depth output (docs/PLAN.md §3 "AR"). Known from the camera alone
          * until an AR session has confirmed ARCore's side; [hasLiDAR] with a context checks the camera.
          */
-        @Volatile
-        var hasLiDAR: Boolean = false
+        /** Compose state, so texts that depend on it update when a session confirms it. */
+        var hasLiDAR: Boolean by mutableStateOf(false)
             private set
+
+        /** A phone's usual height above the floor while aiming at it (Instant Placement's distance). */
+        private const val HELD_HEIGHT = 1.4
+
+        /** Rays nearly level never meet the floor in front: no instant placement then. */
+        private const val MIN_DOWN = 0.2
 
         /** An AR session has answered ARCore's side of [hasLiDAR]: the camera alone no longer decides. */
         @Volatile

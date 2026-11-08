@@ -403,7 +403,21 @@ abstract class ARAlignmentLogic(
         if (limited == thermalLimited) return
         thermalLimited = limited
         reconfigureIfNeeded()
+        thermalLimitChanged(limited)
     }
+
+    /**
+     * After a thermal change: the platform lowers its rendering at once and, when that loses
+     * nothing ([canChangeCameraFormatNow]), switches the camera format (iOS runs the new format
+     * at once, keeping the world).
+     */
+    protected open fun thermalLimitChanged(limited: Boolean) {}
+
+    /**
+     * Nothing is aligned or placed yet, so restarting the camera (ARCore must pause to change its
+     * format) costs nothing the person would notice.
+     */
+    val canChangeCameraFormatNow: Boolean get() = anchoring.alignment == null && state.transform == null
 
     // endregion
 

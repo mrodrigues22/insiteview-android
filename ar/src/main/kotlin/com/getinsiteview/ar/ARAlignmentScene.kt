@@ -15,6 +15,7 @@ import com.getinsiteview.modelkit.ar.GesturePhase
 import com.getinsiteview.modelkit.geometry.YawTransform
 import com.getinsiteview.scene.SceneEngine
 import com.google.ar.core.Config
+import io.github.sceneview.RenderQuality
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.rememberARCameraStream
 import io.github.sceneview.rememberMainLightNode
@@ -49,6 +50,8 @@ fun ARAlignmentScene(view: ARAlignmentView, modifier: Modifier = Modifier) {
         planeFindingMode = Config.PlaneFindingMode.HORIZONTAL,
         sessionConfiguration = { session, config -> view.configureNewSession(session, config) },
         planeRenderer = false,
+        // Hot: lighter rendering at once (iOS drops environment texturing and the mesh).
+        renderQuality = if (view.thermalRenderLimited) RenderQuality.Performance else null,
         cameraStream = cameraStream,
         mainLightNode = sun,
         fillLightNode = null,
