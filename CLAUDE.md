@@ -7,6 +7,11 @@ the reason is written in `docs/PLAN.md` §6 "Differences from iOS"; otherwise iO
 the spec is the iOS code (its plan can be stale). For AR start from `docs/ios-ar-reference.md`, then
 read the Swift it cites.
 
+## Merging to main
+
+- **Never fast-forward `main`, and never push to `main` directly** (`git push origin HEAD:main`, `git merge --ff-only`, a fast-forward `git merge`), even when asked to "merge to main". Work lands on `main` only through a pull request merged with a merge commit, like `Merge pull request #1 from …`.
+- To merge: push the feature branch, open a PR against `main`, and merge it on GitHub with a merge commit (not squash, not rebase). The same applies to the repository's default branch while `main` doesn't exist yet.
+
 ## Commands
 
 - Everything (needs Google's Maven): `./gradlew assembleDebug testDebugUnitTest lintDebug` and
