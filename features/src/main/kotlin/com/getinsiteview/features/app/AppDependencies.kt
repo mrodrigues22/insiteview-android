@@ -159,6 +159,8 @@ class AppDependencies(
             locale = { CatalogLanguage.preferred(preferredLanguages()).raw },
         )
         account = AccountModel(service, myBuildings, applicationScope)
+        // Signed in, the account's units decide (the Profile picker shows the device's value).
+        account.onUnits = { units -> unitSystem = units }
         account.start()
         analytics.start(applicationScope)
     }

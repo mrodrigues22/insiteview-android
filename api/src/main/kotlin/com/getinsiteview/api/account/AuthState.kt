@@ -1,5 +1,7 @@
 package com.getinsiteview.api.account
 
+import com.getinsiteview.core.UnitSystem
+
 import com.getinsiteview.api.ApiError
 import com.getinsiteview.api.GuestProblem
 import com.getinsiteview.api.Me
@@ -110,6 +112,17 @@ data class AuthState(
     /** The session ended without the user signing out: "Your session ended. Sign in again." */
     val sessionEnded: Boolean = false,
 ) {
+    /**
+     * The units the device should adopt when the state changes from [after] (the previous state) to this one:
+     * signed in, the account decides, so a profile that arrives (sign-in, `GET /v1/me`, a change
+     * made on another device) with units different from the last one known sets them on the
+     * device. `null` when there's nothing to change (signed out, no profile yet, same units).
+     */
+    fun adoptedUnits(after: AuthState): UnitSystem? {
+        val units = me?.units ?: return null
+        return if (units != after.me?.units) units else null
+    }
+
     sealed interface Phase {
         /** Reading the stored tokens at launch. */
         data object Restoring : Phase

@@ -30,6 +30,24 @@ class AccountModel(
 
     val state: StateFlow<AuthState> = mutableState.asStateFlow()
 
+    private val sessionEndedAlert = MutableStateFlow(false)
+
+    /**
+     * The session ended on its own (the refresh token expired or was revoked): the root shows
+     * "Your session ended. Sign in again." once ([dismissSessionEnded]).
+     */
+    val showsSessionEnded: StateFlow<Boolean> = sessionEndedAlert.asStateFlow()
+
+    fun dismissSessionEnded() {
+        sessionEndedAlert.value = false
+    }
+
+    /**
+     * Signed in, the account's units decide: called when a profile brings different units
+     * ([AuthState.adoptedUnits]), so the viewer and AR use them.
+     */
+    var onUnits: ((UnitSystem) -> Unit)? = null
+
     val me: Me? get() = state.value.me
 
     val isSignedIn: Boolean get() = state.value.isSignedIn
@@ -41,8 +59,12 @@ class AccountModel(
         // One collector keeps the updates in order.
         scope.launch {
             service.states.collect { next ->
-                val wasSignedIn = mutableState.value.isSignedIn
+                val previous = mutableState.value
+                val wasSignedIn = previous.isSignedIn
+                val units = next.adoptedUnits(after = previous)
+                if (!previous.sessionEnded && next.sessionEnded) sessionEndedAlert.value = true
                 mutableState.value = next
+                units?.let { onUnits?.invoke(it) }
                 if (wasSignedIn && !next.isSignedIn) {
                     // Someone else's buildings must not stay on screen.
                     myBuildings.clear()

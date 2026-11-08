@@ -4,6 +4,7 @@ import com.getinsiteview.api.account.AuthState
 import com.getinsiteview.api.account.OAuthProvider
 import com.getinsiteview.api.account.SignInError
 import com.getinsiteview.api.account.SignInMethod
+import com.getinsiteview.core.UnitSystem
 import java.net.ProtocolException
 import java.net.UnknownHostException
 import java.util.stream.Stream
@@ -71,6 +72,23 @@ class AuthStateTest {
         box.apply(AuthState.Event.Started(SignInMethod.Provider(OAuthProvider.MICROSOFT)))
         box.apply(AuthState.Event.Failed(SignInError.Cancelled))
         assertTrue(box.state.phase == AuthState.Phase.SignedOut && box.state.error == null)
+    }
+
+    @Test
+    fun `Signed in, the account's units decide - a profile with other units is adopted once`() {
+        val me = me()
+        val theirs = if (me.units == UnitSystem.METRIC) UnitSystem.IMPERIAL else UnitSystem.METRIC
+        var state = AuthState()
+        fun next(event: AuthState.Event): UnitSystem? {
+            val previous = state
+            state = state.applying(event) ?: state
+            return state.adoptedUnits(after = previous)
+        }
+        next(AuthState.Event.Restored(signedIn = true))
+        assertEquals(me.units, next(AuthState.Event.ProfileLoaded(me)), "the first profile sets the device's units")
+        assertNull(next(AuthState.Event.ProfileLoaded(me)), "the same units again: nothing to change")
+        assertEquals(theirs, next(AuthState.Event.ProfileLoaded(me.copy(units = theirs))), "changed on another device")
+        assertNull(next(AuthState.Event.SignedOut), "signed out, the device keeps its own")
     }
 
     @Test
