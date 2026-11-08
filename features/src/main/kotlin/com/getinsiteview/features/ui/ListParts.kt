@@ -17,15 +17,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.getinsiteview.core.CatalogColor
+import com.getinsiteview.design.IvNavigationBar
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.toColor
@@ -43,29 +43,29 @@ import com.getinsiteview.features.R
 // Building blocks for the list screens (iOS `List` with sections, `LabeledContent`, the
 // navigation bar): BuildingHome, Rooms, Documents, the object card and Diagnostics.
 
-/** A screen's top bar: a title (model data, so a plain string), back, and trailing actions. */
+/**
+ * A screen's navigation bar (iOS 26, [IvNavigationBar]): a title (model data, so a plain string),
+ * the glass back button, and trailing [actions] in a glass capsule, tinted with the accent as iOS
+ * tints toolbar items. Tab roots pass [largeTitle] and a collapsing [scrollBehavior] (connect its
+ * `nestedScrollConnection` to the content).
+ */
 @Composable
 fun IvTopBar(
     title: String,
     onBack: (() -> Unit)?,
-    actions: @Composable RowScope.() -> Unit = {},
+    largeTitle: Boolean = false,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    TopAppBar(
-        title = { Text(title, style = IvType.headline, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = {
-            if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                }
-            }
+    IvNavigationBar(
+        title = title,
+        onBack = onBack,
+        backLabel = stringResource(R.string.back),
+        largeTitle = largeTitle,
+        scrollBehavior = scrollBehavior,
+        actions = actions?.let { content ->
+            { CompositionLocalProvider(LocalContentColor provides Palette.accent) { content() } }
         },
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Palette.background,
-            titleContentColor = Palette.ink,
-            navigationIconContentColor = Palette.ink,
-            actionIconContentColor = Palette.ink,
-        ),
     )
 }
 
@@ -142,9 +142,9 @@ fun ListRow(
 
 /** iOS `LabeledContent`: a label on the left, the value on the right. */
 @Composable
-fun LabeledRow(label: String, modifier: Modifier = Modifier, value: @Composable () -> Unit) {
+fun LabeledRow(label: String, modifier: Modifier = Modifier, labelColor: Color = Palette.ink, value: @Composable () -> Unit) {
     ListRow(modifier) {
-        Text(label, style = IvType.body(), color = Palette.ink, modifier = Modifier.weight(1f, fill = false))
+        Text(label, style = IvType.body(), color = labelColor, modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.weight(1f))
         Box(contentAlignment = Alignment.CenterEnd) { value() }
     }

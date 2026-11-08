@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.getinsiteview.api.ElementDetail
 import com.getinsiteview.api.buildings.DocumentItem
 import com.getinsiteview.core.CatalogColor
+import com.getinsiteview.design.IvIcons
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.SystemStyle
@@ -225,7 +226,7 @@ fun ObjectCardView(model: ObjectCardModel, actions: ObjectCardActions = ObjectCa
                         showIn3D(model.elementID)
                         dismiss()
                     }) {
-                        RowIcon(Icons.Outlined.ViewInAr)
+                        RowIcon(IvIcons.Cube)
                         Text(stringResource(R.string.show_in_3d), style = IvType.body(), color = Palette.accent)
                     }
                 }

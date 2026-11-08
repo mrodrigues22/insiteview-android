@@ -21,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.PaddingValues
+import com.getinsiteview.design.LocalBottomBarInset
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -79,7 +81,7 @@ fun RoomsView(session: BuildingSession, navigator: BuildingNavigator, need: Prof
         containerColor = Palette.background,
     ) { padding ->
         AccessGate(session, Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = LocalBottomBarInset.current)) {
                 if (need != null) {
                     item { SystemChips(session, BuildingSession.SceneMode.VIEWER) }
                     item { SectionFooter(stringResource(R.string.pick_a_room_to_see_what_s_inside_its_walls_and_floor)) }

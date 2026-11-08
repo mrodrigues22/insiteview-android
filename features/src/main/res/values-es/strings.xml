@@ -165,6 +165,8 @@
     <string name="couldn_t_load_the_plates_check_your_connection">No se pudieron cargar las placas. Revisa la conexión.</string>
     <!-- Couldn't load your buildings · Buildings tab load failure title. -->
     <string name="couldn_t_load_your_buildings">No se pudieron cargar tus inmuebles</string>
+    <!-- Couldn't load your profile · Profile tab: signed in, but the profile couldn't load (offline). -->
+    <string name="couldn_t_load_your_profile">No se pudo cargar tu perfil</string>
     <!-- Couldn't open the document · Document open failure alert title. -->
     <string name="couldn_t_open_the_document">No se pudo abrir el documento</string>
     <!-- Couldn't save the building. Try again. · Guest landing: save failure. -->
@@ -787,4 +789,6 @@
     <string name="your_buildings_in_one_place">Tus inmuebles, en un solo lugar</string>
     <!-- Your name · Registration: name field. -->
     <string name="your_name">Tu nombre</string>
+    <!-- Your session ended. Sign in again. · Root alert: the session ended on its own (the refresh token expired or was revoked). -->
+    <string name="your_session_ended_sign_in_again">Tu sesión terminó. Vuelve a iniciar sesión.</string>
 </resources>

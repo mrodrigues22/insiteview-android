@@ -2,6 +2,17 @@
 
 package com.getinsiteview.android
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.getinsiteview.design.IvGlassGroupItem
+import com.getinsiteview.design.IvIcons
+import com.getinsiteview.design.IvSegmentedControl
+import com.getinsiteview.design.LocalBottomBarInset
+import com.getinsiteview.design.LocalTabReselects
+import com.getinsiteview.design.SwipeAction
+import com.getinsiteview.design.SwipeActionRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -129,15 +140,27 @@ private fun BuildingsList(
         buildings.refreshLocal()
     }
 
+    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
-            IvTopBar(title = stringResource(FeaturesR.string.buildings), onBack = null) {
-                if (isSignedIn) {
-                    IconButton(onClick = { WebPages.open(context, dependencies.webLinks.addBuilding) }) {
-                        Icon(Icons.Outlined.Add, contentDescription = stringResource(FeaturesR.string.add_building))
+            IvTopBar(
+                title = stringResource(FeaturesR.string.buildings),
+                onBack = null,
+                largeTitle = true,
+                scrollBehavior = scroll,
+                actions = if (isSignedIn) {
+                    {
+                        IvGlassGroupItem(
+                            Icons.Outlined.Add,
+                            contentDescription = stringResource(FeaturesR.string.add_building),
+                            onClick = { WebPages.open(context, dependencies.webLinks.addBuilding) },
+                        )
                     }
-                }
-            }
+                } else {
+                    null
+                },
+            )
         },
         containerColor = Palette.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -189,6 +212,10 @@ private fun BuildingsListContent(
     val scope = rememberCoroutineScope()
     var refreshing by remember { mutableStateOf(false) }
     val rows = buildings.rows
+    val listState = rememberLazyListState()
+    // Tapping the tab again scrolls back to the top (iOS).
+    val reselects = LocalTabReselects.current
+    LaunchedEffect(reselects) { if (reselects > 0) listState.animateScrollToItem(0) }
 
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -205,7 +232,7 @@ private fun BuildingsListContent(
         },
         modifier = Modifier.fillMaxSize(),
     ) {
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = LocalBottomBarInset.current)) {
             item(key = "segments") {
                 SegmentPicker(
                     selected = buildings.segment,
@@ -233,17 +260,12 @@ private fun BuildingsListContent(
 @Composable
 private fun SegmentPicker(selected: BuildingListSegment, onSelect: (BuildingListSegment) -> Unit, modifier: Modifier = Modifier) {
     val segments = BuildingListSegment.entries
-    SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
-        segments.forEachIndexed { index, segment ->
-            SegmentedButton(
-                selected = segment == selected,
-                onClick = { onSelect(segment) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = segments.size),
-                icon = {},
-                label = { Text(segmentLabel(segment), maxLines = 1) },
-            )
-        }
-    }
+    IvSegmentedControl(
+        segments = segments.map { segmentLabel(it) },
+        selected = segments.indexOf(selected),
+        onSelect = { onSelect(segments[it]) },
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -255,8 +277,9 @@ private fun segmentLabel(segment: BuildingListSegment): String = when (segment) 
 }
 
 /**
- * One building's row. Swiping it right stars or unstars it (iOS: a leading swipe action with a
- * star); a building without a code can't be starred, and a draft can't be opened (muted).
+ * One building's row. A leading swipe reveals the star (iOS `.swipeActions(edge: .leading)`):
+ * "Favorite" or "Unfavorite", which a full swipe also runs; a building without a code can't be
+ * starred, and a draft can't be opened (muted).
  */
 @Composable
 private fun BuildingRow(
@@ -279,32 +302,14 @@ private fun BuildingRow(
         content()
         return
     }
-    val swipe = rememberSwipeToDismissBoxState()
-    // A full swipe is the star button: toggle, then the row slides back.
-    LaunchedEffect(swipe.currentValue) {
-        if (swipe.currentValue == SwipeToDismissBoxValue.StartToEnd) {
-            onToggleFavorite(code)
-            swipe.snapTo(SwipeToDismissBoxValue.Settled)
-        }
-    }
-    SwipeToDismissBox(
-        state = swipe,
-        enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = false,
-        backgroundContent = {
-            Row(
-                Modifier.fillMaxSize().background(Palette.accent).padding(horizontal = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(if (isFavorite) Icons.Outlined.StarBorder else Icons.Filled.Star, contentDescription = null, tint = Palette.onAccent)
-                Text(
-                    stringResource(if (isFavorite) FeaturesR.string.unfavorite else FeaturesR.string.favorite),
-                    style = IvType.subheadline,
-                    color = Palette.onAccent,
-                )
-            }
-        },
+    SwipeActionRow(
+        key = code.raw,
+        leading = true,
+        action = SwipeAction(
+            label = stringResource(if (isFavorite) FeaturesR.string.unfavorite else FeaturesR.string.favorite),
+            icon = if (isFavorite) IvIcons.StarSlash else Icons.Outlined.StarBorder,
+            onClick = { onToggleFavorite(code) },
+        ),
     ) {
         content()
     }

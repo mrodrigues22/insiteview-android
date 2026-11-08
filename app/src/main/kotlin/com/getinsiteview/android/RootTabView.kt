@@ -2,9 +2,29 @@ package com.getinsiteview.android
 
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import com.getinsiteview.design.GlassTab
+import com.getinsiteview.design.IvGlassTabBar
+import com.getinsiteview.design.LocalBottomBarInset
+import com.getinsiteview.design.LocalGlassState
+import com.getinsiteview.design.LocalTabReselects
+import com.getinsiteview.design.glassSource
+import com.getinsiteview.features.account.SignInReason
+import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -14,11 +34,6 @@ import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,7 +87,8 @@ fun AppRoot(root: AppRootModel) {
                     }
                 },
             )
-            if (root.updateRequired) UpdateRequiredView()
+            // Fades in over everything (iOS presents it with a fade).
+            AnimatedVisibility(visible = root.updateRequired, enter = fadeIn(), exit = fadeOut()) { UpdateRequiredView() }
         }
     }
 }
@@ -110,6 +126,7 @@ fun RootTabView(model: AppRootModel, dependencies: AppDependencies) {
     val searchNav = rememberNavController()
     val tabStates = rememberSaveableStateHolder()
     val prompt = dependencies.signInPrompt
+    val scope = rememberCoroutineScope()
     val signInReason by prompt.reason.collectAsStateWithLifecycle()
 
     // AR covers the tabs, as iOS's full-screen cover does (and switching tabs can't tear it down).
@@ -139,52 +156,56 @@ fun RootTabView(model: AppRootModel, dependencies: AppDependencies) {
         snapshotFlow { model.openRequests }.drop(1).collect { tab = AppTab.BUILDINGS }
     }
 
-    Scaffold(
-        containerColor = Palette.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            if (!arCovers) NavigationBar(containerColor = Palette.surface) {
-                for (item in AppTab.entries) {
-                    val selected = tab == item
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            if (selected) {
-                                // Tapping the current tab goes back to its first screen, as on iOS.
-                                when (item) {
-                                    AppTab.BUILDINGS -> buildingsNav.popBackStack(BuildingsListRoute, inclusive = false)
-                                    AppTab.SEARCH -> searchNav.popBackStack(SearchResultsRoute, inclusive = false)
-                                    else -> Unit
-                                }
-                            } else {
-                                tab = item
-                            }
-                        },
-                        icon = { Icon(tabIcon(item), contentDescription = null) },
-                        label = { Text(tabTitle(item)) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Palette.accent,
-                            selectedTextColor = Palette.accent,
-                            indicatorColor = Palette.accentSoft,
-                            unselectedIconColor = Palette.muted,
-                            unselectedTextColor = Palette.muted,
-                        ),
-                    )
+    val glass = rememberHazeState()
+    var reselects by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    var barHeight by remember { mutableStateOf(0.dp) }
+    val tabs = AppTab.entries.map { GlassTab(tabTitle(it), tabIcon(it)) }
+
+    Box(Modifier.fillMaxSize().background(Palette.background)) {
+        // The content runs under the floating tab bar (iOS 26), which blurs it.
+        Box(Modifier.fillMaxSize().glassSource(glass)) {
+            CompositionLocalProvider(
+                LocalGlassState provides glass,
+                LocalBottomBarInset provides if (arCovers) 0.dp else barHeight,
+                LocalTabReselects provides reselects,
+            ) {
+                // Only the selected tab is composed; each keeps its saved UI state while hidden.
+                tabStates.SaveableStateProvider(tab.name) {
+                    when (tab) {
+                        AppTab.BUILDINGS -> BuildingsTab(model, dependencies, buildingsNav, onScanRequested = { tab = AppTab.SCAN })
+                        AppTab.SEARCH -> SearchTab(dependencies, searchNav)
+                        AppTab.SCAN -> ScanTab(model, isActive = true)
+                        AppTab.PROFILE -> ProfileTab(dependencies)
+                    }
                 }
             }
-        },
-    ) { padding ->
-        Box(
-            Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
-        ) {
-            // Only the selected tab is composed; each keeps its saved UI state while hidden.
-            tabStates.SaveableStateProvider(tab.name) {
-                when (tab) {
-                    AppTab.BUILDINGS -> BuildingsTab(model, dependencies, buildingsNav, onScanRequested = { tab = AppTab.SCAN })
-                    AppTab.SEARCH -> SearchTab(dependencies, searchNav)
-                    AppTab.SCAN -> ScanTab(model, isActive = true)
-                    AppTab.PROFILE -> ProfileTab(dependencies)
-                }
+        }
+        if (!arCovers) {
+            CompositionLocalProvider(LocalGlassState provides glass) {
+                IvGlassTabBar(
+                    tabs = tabs,
+                    selected = tab.ordinal,
+                    onSelect = { index ->
+                        val item = AppTab.entries[index]
+                        if (item == tab) {
+                            // Tapping the current tab goes back to its first screen, then to the top, as on iOS.
+                            val popped = when (item) {
+                                AppTab.BUILDINGS -> buildingsNav.popBackStack(BuildingsListRoute, inclusive = false)
+                                AppTab.SEARCH -> searchNav.popBackStack(SearchResultsRoute, inclusive = false)
+                                else -> false
+                            }
+                            if (!popped) reselects++
+                        } else {
+                            tab = item
+                        }
+                    },
+                    // Measured with the navigation bar's inset under it: the content clears both.
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .onSizeChanged { barHeight = with(density) { it.height.toDp() } }
+                        .navigationBarsPadding(),
+                )
             }
         }
     }
@@ -195,6 +216,24 @@ fun RootTabView(model: AppRootModel, dependencies: AppDependencies) {
             reason = reason,
             onFinished = { prompt.finish(signedIn = true) },
             onDismiss = { prompt.finish(signedIn = dependencies.account.isSignedIn) },
+        )
+    }
+
+    // The session ended on its own (S-01): once, wherever the person is.
+    val sessionEnded by dependencies.account.showsSessionEnded.collectAsStateWithLifecycle()
+    if (sessionEnded) {
+        AlertDialog(
+            onDismissRequest = { dependencies.account.dismissSessionEnded() },
+            title = { Text(stringResource(FeaturesR.string.your_session_ended_sign_in_again)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    dependencies.account.dismissSessionEnded()
+                    scope.launch { prompt.requestSignIn(SignInReason.Account) }
+                }) { Text(stringResource(FeaturesR.string.sign_in)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { dependencies.account.dismissSessionEnded() }) { Text(stringResource(FeaturesR.string.ok)) }
+            },
         )
     }
 

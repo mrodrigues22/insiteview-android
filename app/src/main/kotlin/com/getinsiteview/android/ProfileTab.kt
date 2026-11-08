@@ -1,5 +1,14 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.getinsiteview.android
 
+import androidx.compose.material.icons.outlined.WifiOff
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.getinsiteview.design.LocalBottomBarInset
+import com.getinsiteview.design.LocalTabReselects
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,10 +85,21 @@ fun ProfileTab(dependencies: AppDependencies) {
 
     // Debug builds: the AR marking device test (iOS docs/spikes/reference-points.md).
     var showsMarkingTest by remember { mutableStateOf(false) }
+    // The tab's own profile load is running (signed in, no profile yet).
+    var loadingProfile by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        if (account.isSignedIn) account.refreshProfile()
+    suspend fun loadProfile() {
+        if (!account.isSignedIn) return
+        loadingProfile = true
+        try {
+            account.refreshProfile()
+        } finally {
+            loadingProfile = false
+        }
     }
+
+    LaunchedEffect(auth.isSignedIn) { loadProfile() }
 
     if (showsMarkingTest) {
         androidx.activity.compose.BackHandler { showsMarkingTest = false }
@@ -87,9 +107,11 @@ fun ProfileTab(dependencies: AppDependencies) {
         return
     }
 
+    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
-            IvTopBar(title = stringResource(FeaturesR.string.profile), onBack = null, actions = {
+            IvTopBar(title = stringResource(FeaturesR.string.profile), onBack = null, largeTitle = true, scrollBehavior = scroll, actions = {
                 if (BuildConfig.DEBUG) {
                     androidx.compose.material3.IconButton(onClick = { showsMarkingTest = true }) {
                         androidx.compose.material3.Icon(
@@ -105,10 +127,23 @@ fun ProfileTab(dependencies: AppDependencies) {
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             val me = auth.me
-            if (me != null) {
-                ProfileContent(dependencies, me)
-            } else {
-                ProfileSignedOut(dependencies)
+            when {
+                me != null -> ProfileContent(dependencies, me)
+                // Signed in, but the profile hasn't loaded (offline): not the signed-out view,
+                // whose "Sign in" would do nothing (S-02).
+                auth.isSignedIn -> if (loadingProfile) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Palette.accent) }
+                } else {
+                    ContentUnavailable(
+                        title = stringResource(FeaturesR.string.couldn_t_load_your_profile),
+                        description = stringResource(FeaturesR.string.check_your_connection_and_try_again),
+                        icon = { UnavailableIcon(Icons.Outlined.WifiOff) },
+                        actions = {
+                            PrimaryActionButton(stringResource(FeaturesR.string.try_again), onClick = { scope.launch { loadProfile() } })
+                        },
+                    )
+                }
+                else -> ProfileSignedOut(dependencies)
             }
         }
     }
@@ -161,7 +196,9 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
     val account = dependencies.account
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var units by remember(me.id) { mutableStateOf(me.units) }
+    // The device's value: signed in, it follows the account (AccountModel.onUnits); a profile with
+    // other units (changed on another device) resets the picker (S-03).
+    var units by remember(me.units) { mutableStateOf(dependencies.unitSystem) }
     var confirmationSent by remember { mutableStateOf(false) }
     var signingOut by remember { mutableStateOf(false) }
     var showsDeleteConfirmation by remember { mutableStateOf(false) }
@@ -184,7 +221,11 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    val scrollState = rememberScrollState()
+    // Tapping the tab again scrolls back to the top (iOS).
+    val reselects = LocalTabReselects.current
+    LaunchedEffect(reselects) { if (reselects > 0) scrollState.animateScrollTo(0) }
+    Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(bottom = LocalBottomBarInset.current)) {
         // Account
         SectionHeader(stringResource(FeaturesR.string.account))
         LabeledRow(stringResource(FeaturesR.string.name)) { Text(me.displayName, style = IvType.body(), color = Palette.muted) }
@@ -240,6 +281,8 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
                                 if (option != units) {
                                     units = option
                                     dependencies.unitSystem = option
+                                }
+                                if (option != me.units) {
                                     scope.launch {
                                         try {
                                             account.setUnits(option)
@@ -261,21 +304,21 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
         Spacer(Modifier.size(20.dp))
         ListRow(onClick = { WebPages.openLanguageSettings(context) }) {
             RowIcon(Icons.Outlined.Language)
-            Text(stringResource(FeaturesR.string.language), style = IvType.body(), color = Palette.ink)
+            Text(stringResource(FeaturesR.string.language), style = IvType.body(), color = Palette.accent)
             Spacer(Modifier.weight(1f))
             Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, tint = Palette.muted, modifier = Modifier.size(16.dp))
         }
         ListRow(onClick = { WebPages.open(context, dependencies.webLinks.help) }) {
             RowIcon(Icons.AutoMirrored.Outlined.HelpOutline)
-            Text(stringResource(FeaturesR.string.help), style = IvType.body(), color = Palette.ink)
+            Text(stringResource(FeaturesR.string.help), style = IvType.body(), color = Palette.accent)
         }
         ListRow(onClick = { WebPages.open(context, dependencies.webLinks.terms) }) {
             RowIcon(Icons.Outlined.Description)
-            Text(stringResource(FeaturesR.string.terms), style = IvType.body(), color = Palette.ink)
+            Text(stringResource(FeaturesR.string.terms), style = IvType.body(), color = Palette.accent)
         }
         ListRow(onClick = { WebPages.open(context, dependencies.webLinks.privacy) }) {
             RowIcon(Icons.Outlined.PrivacyTip)
-            Text(stringResource(FeaturesR.string.privacy), style = IvType.body(), color = Palette.ink)
+            Text(stringResource(FeaturesR.string.privacy), style = IvType.body(), color = Palette.accent)
         }
 
         // Sign out and delete
@@ -309,7 +352,7 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
 
         // Version
         Spacer(Modifier.size(20.dp))
-        LabeledRow(stringResource(FeaturesR.string.version)) {
+        LabeledRow(stringResource(FeaturesR.string.version), labelColor = Palette.muted) {
             Text(BuildConfig.VERSION_NAME, style = IvType.mono(15.sp), color = Palette.muted)
         }
         AttributionFooter(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp))

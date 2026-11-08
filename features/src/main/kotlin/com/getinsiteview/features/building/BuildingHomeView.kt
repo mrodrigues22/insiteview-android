@@ -38,6 +38,13 @@ import com.getinsiteview.core.CatalogColor
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.LoadingBar
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.IvIcons
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.imePadding
+import com.getinsiteview.design.IvSearchField
+import com.getinsiteview.design.LocalBottomBarInset
+import com.getinsiteview.design.SwipeAction
+import com.getinsiteview.design.SwipeActionRow
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
 import com.getinsiteview.features.R
@@ -82,13 +89,27 @@ fun BuildingHomeView(session: BuildingSession, navigator: BuildingNavigator) {
         containerColor = Palette.background,
     ) { padding ->
         AccessGate(session, Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(Modifier.fillMaxSize()) {
-                item { SearchField(search) }
-                if (search.isActive) {
-                    searchResults(session, search, ::open)
-                } else {
-                    content(session, navigator, onSelect = { selection = it })
+            val bottomInset = LocalBottomBarInset.current
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomInset + SEARCH_FIELD_HEIGHT)) {
+                    if (search.isActive) {
+                        searchResults(session, search, ::open)
+                    } else {
+                        content(session, navigator, onSelect = { selection = it })
+                    }
                 }
+                // iOS 26 `.searchable` on iPhone: the field at the bottom, above the tab bar.
+                IvSearchField(
+                    query = search.query,
+                    onQueryChange = { search.query = it },
+                    placeholder = stringResource(R.string.search_outlets_valves_panels),
+                    clearLabel = stringResource(R.string.clear_search),
+                    cancelLabel = stringResource(R.string.cancel),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .imePadding()
+                        .padding(start = 16.dp, end = 16.dp, bottom = bottomInset + 8.dp),
+                )
             }
         }
     }
@@ -102,34 +123,8 @@ fun BuildingHomeView(session: BuildingSession, navigator: BuildingNavigator) {
     )
 }
 
-@Composable
-private fun SearchField(search: SearchModel) {
-    OutlinedTextField(
-        value = search.query,
-        onValueChange = { search.query = it },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        placeholder = { Text(stringResource(R.string.search_outlets_valves_panels), color = Palette.muted) },
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Palette.muted) },
-        trailingIcon = {
-            if (search.query.isNotEmpty()) {
-                IconButton(onClick = { search.query = "" }) {
-                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cancel), tint = Palette.muted)
-                }
-            }
-        },
-        singleLine = true,
-        shape = RectangleShape,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Palette.surface,
-            unfocusedContainerColor = Palette.surface,
-            focusedBorderColor = Palette.ink,
-            unfocusedBorderColor = Palette.line,
-            cursorColor = Palette.accent,
-            focusedTextColor = Palette.ink,
-            unfocusedTextColor = Palette.ink,
-        ),
-    )
-}
+/** The bottom search field's height with its spacing. */
+private val SEARCH_FIELD_HEIGHT = 64.dp
 
 private fun LazyListScope.content(session: BuildingSession, navigator: BuildingNavigator, onSelect: (String) -> Unit) {
     val line = session.statusLine
@@ -140,8 +135,8 @@ private fun LazyListScope.content(session: BuildingSession, navigator: BuildingN
     // One control per row.
     item {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            PrimaryActionButton(stringResource(R.string.view_in_ar), onClick = navigator::showAR)
-            SecondaryActionButton(stringResource(R.string.s_3d_model), onClick = { navigator.push(BuildingRoute.Viewer()) })
+            PrimaryActionButton(stringResource(R.string.view_in_ar), onClick = navigator::showAR, icon = Icons.Outlined.ViewInAr)
+            SecondaryActionButton(stringResource(R.string.s_3d_model), onClick = { navigator.push(BuildingRoute.Viewer()) }, icon = IvIcons.Cube)
         }
     }
 
@@ -178,19 +173,21 @@ private fun LazyListScope.content(session: BuildingSession, navigator: BuildingN
     if (equipment.isNotEmpty()) {
         item { SectionHeader(stringResource(R.string.equipment)) }
         for (record in equipment) {
-            item {
-                ListRow(onClick = { onSelect(record.id) }) {
-                    ElementRow(
-                        title = session.displayName(record),
-                        color = session.catalog?.color(record.system, record.subsystem) ?: CatalogColor.FALLBACK,
-                        place = session.storeyName(record.storeyID),
-                    )
-                    // iOS: a trailing swipe action.
-                    IconButton(onClick = {
+            item(key = "equipment-" + record.id) {
+                // iOS: a trailing swipe action ("Locate in AR"), which a full swipe also runs.
+                SwipeActionRow(
+                    key = record.id,
+                    action = SwipeAction(stringResource(R.string.locate_in_ar), Icons.Outlined.ViewInAr) {
                         session.locate(record.id)
                         navigator.showAR()
-                    }) {
-                        Icon(Icons.Outlined.ViewInAr, contentDescription = stringResource(R.string.locate_in_ar), tint = Palette.accent)
+                    },
+                ) {
+                    ListRow(onClick = { onSelect(record.id) }) {
+                        ElementRow(
+                            title = session.displayName(record),
+                            color = session.catalog?.color(record.system, record.subsystem) ?: CatalogColor.FALLBACK,
+                            place = session.storeyName(record.storeyID),
+                        )
                     }
                 }
             }

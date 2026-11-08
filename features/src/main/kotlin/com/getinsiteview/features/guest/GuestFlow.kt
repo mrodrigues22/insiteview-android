@@ -163,8 +163,9 @@ fun GuestFlowView(model: GuestFlowModel, navigator: BuildingNavigator) {
     }
     val problem = model.problem
     when {
+        // iOS: the problem screen has no title.
         problem != null -> Scaffold(
-            topBar = { IvTopBar(model.building?.displayCode ?: "", onBack = navigator::back) },
+            topBar = { IvTopBar("", onBack = navigator::back) },
             containerColor = Palette.background,
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

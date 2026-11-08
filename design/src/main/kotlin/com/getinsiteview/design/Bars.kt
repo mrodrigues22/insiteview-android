@@ -74,6 +74,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
@@ -377,5 +380,118 @@ fun SwipeActionRow(
                 )
             }
         }
+    }
+}
+
+/**
+ * The iOS segmented control (iOS 26): a grey capsule track; the selected segment is a raised white
+ * capsule that slides between segments; labels in the system subheadline, medium when selected.
+ */
+@Composable
+fun IvSegmentedControl(
+    segments: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var widthPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val count = segments.size.coerceAtLeast(1)
+    val thumb by androidx.compose.animation.core.animateFloatAsState(selected.toFloat(), spring(dampingRatio = 0.85f, stiffness = 500f), label = "segment")
+    Box(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = 36.dp)
+            .background(Palette.sunk, RoundedCornerShape(percent = 50))
+            .onSizeChanged { widthPx = it.width }
+            .padding(2.dp),
+    ) {
+        if (widthPx > 0) {
+            val segmentWidth = with(density) { ((widthPx - 4.dp.toPx()) / count).toDp() }
+            Box(
+                Modifier
+                    .offset { IntOffset((thumb * (widthPx - 4.dp.toPx()) / count).roundToInt(), 0) }
+                    .width(segmentWidth)
+                    .heightIn(min = 32.dp)
+                    .shadowedCapsule(),
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            segments.forEachIndexed { index, title ->
+                val isSelected = index == selected
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 32.dp)
+                        .clickable(interactionSource = null, indication = null, role = androidx.compose.ui.semantics.Role.Tab) { onSelect(index) }
+                        .semantics { this.selected = isSelected },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        title,
+                        style = IvType.system(SystemStyle.Subheadline, if (isSelected) FontWeight.SemiBold else FontWeight.Normal),
+                        color = Palette.ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 6.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Modifier.shadowedCapsule(): Modifier = this
+    .shadow(2.dp, RoundedCornerShape(percent = 50))
+    .background(if (LocalIvColors.current.isDark) Palette.line else Color.White, RoundedCornerShape(percent = 50))
+
+/** SF Symbols with no Material equivalent. */
+object IvIcons {
+    /** `star.slash`: a five-pointed star outline crossed out (iOS "Unfavorite"). */
+    val StarSlash: ImageVector by lazy {
+        ImageVector.Builder(name = "StarSlash", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
+            .addPath(
+                pathData = starPath(),
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.8f,
+                strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round,
+            )
+            .addPath(
+                pathData = androidx.compose.ui.graphics.vector.PathParser().parsePathString("M3,3 L21,21").toNodes(),
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.8f,
+                strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+            )
+            .build()
+    }
+
+    /** `cube`: an isometric cube outline (iOS "Explore in 3D", "3D model", "Show in 3D"). */
+    val Cube: ImageVector by lazy {
+        ImageVector.Builder(name = "Cube", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
+            .addPath(
+                pathData = androidx.compose.ui.graphics.vector.PathParser()
+                    .parsePathString("M12,2.5 L20.5,7.25 L20.5,16.75 L12,21.5 L3.5,16.75 L3.5,7.25 Z M3.5,7.25 L12,12 L20.5,7.25 M12,12 L12,21.5")
+                    .toNodes(),
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.6f,
+                strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round,
+                strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+            )
+            .build()
+    }
+
+    /** A star centred in 24×24: outer radius 10, inner 4.2, point up. */
+    private fun starPath(): List<androidx.compose.ui.graphics.vector.PathNode> {
+        val points = (0 until 10).map { i ->
+            val radius = if (i % 2 == 0) 10.0 else 4.2
+            val angle = Math.PI / 2 + i * Math.PI / 5
+            (12 + radius * Math.cos(angle)).toFloat() to (12.5 - radius * Math.sin(angle)).toFloat()
+        }
+        val path = StringBuilder("M${points[0].first},${points[0].second}")
+        for (p in points.drop(1)) path.append(" L${p.first},${p.second}")
+        path.append(" Z")
+        return androidx.compose.ui.graphics.vector.PathParser().parsePathString(path.toString()).toNodes()
     }
 }

@@ -40,6 +40,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
+import com.getinsiteview.design.LocalBottomBarInset
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -59,6 +62,12 @@ import com.getinsiteview.design.Eyebrow
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.LoadingBar
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.IvIcons
+import com.getinsiteview.design.LinkChip
+import androidx.compose.material.icons.outlined.ViewInAr
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
 import com.getinsiteview.design.SystemStyle
@@ -130,6 +139,7 @@ fun GuestLandingView(model: GuestFlowModel, navigator: BuildingNavigator) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalBottomBarInset.current)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
@@ -243,7 +253,12 @@ private fun Header(model: GuestFlowModel) {
                 )
             }
         } else {
-            DisplayText(session.name, size = 34.sp)
+            if (session.name.isEmpty()) {
+                // iOS `.redacted(reason: .placeholder)`: a grey bar where the name will be.
+                Box(Modifier.width(200.dp).height(36.dp).background(Palette.sunk))
+            } else {
+                DisplayText(session.name, size = 34.sp)
+            }
         }
     }
 }
@@ -295,7 +310,7 @@ private fun PinBanner(enterPin: () -> Unit) {
 @Composable
 private fun Actions(session: BuildingSession, onAR: () -> Unit, onExplore: () -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        PrimaryActionButton(stringResource(R.string.see_in_ar), onClick = onAR)
+        PrimaryActionButton(stringResource(R.string.see_in_ar), onClick = onAR, icon = Icons.Outlined.ViewInAr)
         val plate = session.scannedPlate
         if (plate != null) {
             // Plate invocation (A-04): AR opens on "Point at the plate you scanned".
@@ -306,7 +321,7 @@ private fun Actions(session: BuildingSession, onAR: () -> Unit, onExplore: () ->
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        SecondaryActionButton(stringResource(R.string.explore_in_3d), onClick = onExplore)
+        SecondaryActionButton(stringResource(R.string.explore_in_3d), onClick = onExplore, icon = IvIcons.Cube)
     }
 }
 
@@ -321,7 +336,7 @@ private fun Needs(session: BuildingSession, open: (ProfessionalNeed) -> Unit) {
         Eyebrow(stringResource(R.string.what_do_you_need), Modifier.padding(horizontal = 16.dp))
         ChipRow {
             for (need in available) {
-                Chip(title = needTitle(need), isSelected = false, onClick = { open(need) })
+                LinkChip(title = needTitle(need), onClick = { open(need) })
             }
         }
     }
@@ -340,11 +355,19 @@ fun needTitle(need: ProfessionalNeed): String = stringResource(
     },
 )
 
+/** iOS `NavigationLink { Label(…) }` outside a list: a tinted link with its icon, no row or chevron. */
 @Composable
 private fun LinkRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
-    ListRow(onClick = onClick, chevron = true) {
-        RowIcon(icon)
-        Text(title, style = IvType.body(), color = Palette.ink)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(24.dp))
+        Text(title, style = IvType.body(), color = Palette.accent)
     }
 }
 
@@ -375,7 +398,7 @@ fun SaveBuildingSection(session: BuildingSession, prompt: SignInPrompt) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Palette.accent, strokeWidth = 2.dp)
                 }
             } else {
-                SecondaryActionButton(stringResource(R.string.save_this_building), onClick = {
+                SecondaryActionButton(stringResource(R.string.save_this_building), icon = Icons.Outlined.BookmarkBorder, onClick = {
                     scope.launch { save(session, prompt) }
                 })
             }

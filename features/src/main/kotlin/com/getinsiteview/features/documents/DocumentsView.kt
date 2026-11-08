@@ -39,6 +39,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.PaddingValues
+import com.getinsiteview.design.LocalBottomBarInset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -214,7 +216,7 @@ fun DocumentsView(session: BuildingSession, navigator: BuildingNavigator) {
                 },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = LocalBottomBarInset.current)) {
                     when (val state = session.documents) {
                         BuildingSession.DocumentsState.Idle, BuildingSession.DocumentsState.Loading -> item {
                             Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {

@@ -35,6 +35,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.getinsiteview.design.glass
+import com.getinsiteview.design.LocalBottomBarInset
+import com.getinsiteview.design.GlassMaterial
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
@@ -106,21 +110,9 @@ fun Viewer3DView(session: BuildingSession, navigator: BuildingNavigator, focus: 
         }
     }
 
-    Scaffold(
-        topBar = {
-            IvTopBar(session.name, onBack = navigator::back) {
-                IconButton(onClick = ::showAR) {
-                    Icon(Icons.Outlined.ViewInAr, contentDescription = stringResource(R.string.see_in_ar))
-                }
-                StoreyMenu(session, BuildingSession.SceneMode.VIEWER)
-                IconButton(onClick = { fitRequest += 1 }) {
-                    Icon(Icons.Outlined.ZoomOutMap, contentDescription = stringResource(R.string.fit_to_screen))
-                }
-            }
-        },
-        containerColor = Palette.background,
-    ) { padding ->
-        AccessGate(session, Modifier.fillMaxSize().padding(padding)) {
+    // The model fills the screen, under the system bars, the navigation bar and the tab bar (iOS).
+    Box(Modifier.fillMaxSize().background(Palette.background)) {
+        AccessGate(session, Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                 val modelLabel = stringResource(R.string.s_3d_model)
                 ModelViewer(
@@ -135,7 +127,11 @@ fun Viewer3DView(session: BuildingSession, navigator: BuildingNavigator, focus: 
                     state = session.orbitView("viewer"),
                 )
                 Column(
-                    Modifier.fillMaxWidth().background(Palette.surface.copy(alpha = 0.92f)).padding(vertical = 12.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = LocalBottomBarInset.current)
+                        .glass(RectangleShape, GlassMaterial.Regular, shadow = false)
+                        .padding(vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -167,8 +163,24 @@ fun Viewer3DView(session: BuildingSession, navigator: BuildingNavigator, focus: 
                 )
             }
         }
+        // The navigation bar floats over the model: the glass back button and a glass capsule of
+        // tinted buttons, over a soft fade of the background (iOS 26's scroll edge effect).
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(Brush.verticalGradient(0f to Palette.background, 0.75f to Palette.background.copy(alpha = 0.9f), 1f to Palette.background.copy(alpha = 0f))),
+        ) {
+            IvTopBar(session.name, onBack = navigator::back) {
+                IconButton(onClick = ::showAR) {
+                    Icon(Icons.Outlined.ViewInAr, contentDescription = stringResource(R.string.see_in_ar))
+                }
+                StoreyMenu(session, BuildingSession.SceneMode.VIEWER)
+                IconButton(onClick = { fitRequest += 1 }) {
+                    Icon(Icons.Outlined.ZoomOutMap, contentDescription = stringResource(R.string.fit_to_screen))
+                }
+            }
+        }
     }
-
 }
 
 /** A flag read in `onDispose`, so not Compose state. */

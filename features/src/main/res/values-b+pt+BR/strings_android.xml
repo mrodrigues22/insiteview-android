@@ -29,4 +29,6 @@
     <string name="ar_couldn_t_start_try_again_or_explore_the_model_in_3d">Não foi possível iniciar a AR. Tente de novo ou explore o modelo em 3D.</string>
     <!-- Documents: no app on the phone opens the file's type (iOS QuickLook always can). -->
     <string name="no_app_on_this_phone_can_open_this_file">Nenhum app neste telefone abre este arquivo.</string>
+    <!-- Search fields: the clear button (accessibility label; iOS's searchable draws its own). -->
+    <string name="clear_search">Limpar busca</string>
 </resources>

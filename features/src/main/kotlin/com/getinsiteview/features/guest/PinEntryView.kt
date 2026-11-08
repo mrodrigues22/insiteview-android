@@ -38,6 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.getinsiteview.features.onboarding.isReducedMotion
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -126,10 +129,14 @@ fun PinEntryView(session: BuildingSession, onDismiss: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val haptics = LocalHapticFeedback.current
     val shake = remember { Animatable(0f) }
+    val context = LocalContext.current
+    // iOS: no shake with Reduce Motion (the haptic stays).
+    val reduceMotion = remember { isReducedMotion(context) }
 
     LaunchedEffect(model.wrongCount) {
         if (model.wrongCount == 0) return@LaunchedEffect
         haptics.performHapticFeedback(HapticFeedbackType.Reject)
+        if (reduceMotion) return@LaunchedEffect
         shake.animateTo(0f, keyframes {
             durationMillis = 280
             10f at 60
@@ -149,7 +156,8 @@ fun PinEntryView(session: BuildingSession, onDismiss: () -> Unit) {
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = Palette.background) {
-        Column(Modifier.fillMaxWidth().padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        // Fills the screen, as iOS's `.large` detent.
+        Column(Modifier.fillMaxSize().padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel), color = Palette.accent) }
             }
@@ -248,8 +256,14 @@ private fun PinStatus(model: PinEntryModel) {
 private fun Keypad(model: PinEntryModel) {
     val isBusy = model.pad.status == PinPad.Status.Checking
     val haptics = LocalHapticFeedback.current
+    // iOS `.sensoryFeedback(.selection, trigger: model.pad.digits)`: a tick when the digits change,
+    // not on every key press (a key that changes nothing stays silent).
+    var lastDigits by remember { mutableStateOf(model.pad.digits) }
+    LaunchedEffect(model.pad.digits) {
+        if (model.pad.digits != lastDigits) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        lastDigits = model.pad.digits
+    }
     fun tap(action: () -> Unit) {
-        haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
         action()
     }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.alpha(if (isBusy) 0.5f else 1f)) {

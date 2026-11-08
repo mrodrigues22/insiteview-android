@@ -2,6 +2,16 @@
 
 package com.getinsiteview.android
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.semantics.Role
+import com.getinsiteview.design.IvSegmentedControl
+import com.getinsiteview.design.SystemStyle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -159,6 +169,7 @@ fun SignInView(
                             text = stringResource(FeaturesR.string.continue_with_email),
                             enabled = busy == null,
                             onClick = { showsEmail = true },
+                            icon = Icons.Outlined.Email,
                         )
                     }
                     error?.let { SignInErrorText(it) }
@@ -257,8 +268,8 @@ private fun EmailSignInView(dependencies: AppDependencies, onBack: () -> Unit, f
             } catch (failure: SignInError) {
                 if (failure != SignInError.Cancelled) {
                     error = failure
-                    // iOS also clears the error when the mode changes, which hides this message at once;
-                    // here it stays: "There's already an account with this email. Sign in instead."
+                    // The switch to Sign in keeps the message ("…Sign in instead."); only a tap on the
+                    // other segment clears it (iOS does the same since S-05).
                     if (failure == SignInError.EmailTaken) mode = EmailMode.SIGN_IN
                 }
             } finally {
@@ -291,24 +302,17 @@ private fun EmailSignInView(dependencies: AppDependencies, onBack: () -> Unit, f
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val modes = EmailMode.entries
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                modes.forEachIndexed { index, item ->
-                    SegmentedButton(
-                        selected = item == mode,
-                        onClick = {
-                            if (item != mode) {
-                                mode = item
-                                error = null
-                            }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                        icon = {},
-                        label = {
-                            Text(stringResource(if (item == EmailMode.SIGN_IN) FeaturesR.string.sign_in else FeaturesR.string.create_account))
-                        },
-                    )
-                }
-            }
+            IvSegmentedControl(
+                segments = modes.map { stringResource(if (it == EmailMode.SIGN_IN) FeaturesR.string.sign_in else FeaturesR.string.create_account) },
+                selected = modes.indexOf(mode),
+                onSelect = { index ->
+                    val item = modes[index]
+                    if (item != mode) {
+                        mode = item
+                        error = null
+                    }
+                },
+            )
 
             if (mode == EmailMode.REGISTER) {
                 OutlinedTextField(
@@ -363,11 +367,23 @@ private fun EmailSignInView(dependencies: AppDependencies, onBack: () -> Unit, f
             )
             FieldErrors(error, "password")
 
-            BusyButton(busy = busy) {
-                PrimaryActionButton(
-                    text = stringResource(if (mode == EmailMode.SIGN_IN) FeaturesR.string.sign_in else FeaturesR.string.create_account),
-                    enabled = canSubmit && !busy,
-                    onClick = { submit() },
+            // iOS: a plain form row in the accent colour, centred, with a spinner while it works.
+            val submitEnabled = canSubmit && !busy
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .background(Palette.surface, RoundedCornerShape(10.dp))
+                    .clickable(enabled = submitEnabled, role = Role.Button) { submit() }
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Palette.muted, strokeWidth = 2.dp)
+                Text(
+                    stringResource(if (mode == EmailMode.SIGN_IN) FeaturesR.string.sign_in else FeaturesR.string.create_account),
+                    style = IvType.system(SystemStyle.Body),
+                    color = if (submitEnabled) Palette.accent else Palette.muted,
                 )
             }
             if (mode == EmailMode.SIGN_IN) {

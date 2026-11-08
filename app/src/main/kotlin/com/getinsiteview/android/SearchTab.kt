@@ -2,6 +2,11 @@
 
 package com.getinsiteview.android
 
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.getinsiteview.design.IvSearchField
+import com.getinsiteview.design.LocalBottomBarInset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,54 +91,48 @@ fun SearchTab(dependencies: AppDependencies, navController: NavHostController) {
 private fun SearchScreen(dependencies: AppDependencies, navController: NavHostController) {
     val search: SearchTabModel = viewModel()
     val auth by dependencies.account.state.collectAsStateWithLifecycle()
-    val focus = LocalFocusManager.current
+    val bottomInset = LocalBottomBarInset.current
 
-    // Each keystroke restarts the search (the debounce is in run()).
-    LaunchedEffect(search.query) {
+    // Each keystroke restarts the search (the debounce is in run()); signed out, nothing is sent (S-04).
+    LaunchedEffect(search.query, auth.isSignedIn) {
         search.bind(dependencies)
-        search.run()
+        search.run(signedIn = auth.isSignedIn)
     }
 
+    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { IvTopBar(title = stringResource(FeaturesR.string.search), onBack = null) },
+        modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
+        topBar = { IvTopBar(title = stringResource(FeaturesR.string.search), onBack = null, largeTitle = true, scrollBehavior = scroll) },
         containerColor = Palette.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            OutlinedTextField(
-                value = search.query,
-                onValueChange = { search.query = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                singleLine = true,
-                placeholder = { Text(stringResource(FeaturesR.string.search_your_buildings_rooms_and_equipment), maxLines = 1) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (search.query.isNotEmpty()) {
-                        IconButton(onClick = { search.query = "" }) {
-                            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.app_clear_search))
-                        }
-                    }
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Palette.accent,
-                    unfocusedBorderColor = Palette.line,
-                    focusedContainerColor = Palette.surface,
-                    unfocusedContainerColor = Palette.surface,
-                    cursorColor = Palette.accent,
-                ),
-            )
-            Box(Modifier.fillMaxSize()) {
+        Box(Modifier.padding(padding).fillMaxSize()) {
+            Box(Modifier.fillMaxSize().padding(bottom = SEARCH_FIELD_HEIGHT + bottomInset)) {
                 if (auth.isSignedIn) {
                     SearchResultsContent(search, navController)
                 } else {
                     SearchSignedOut(dependencies)
                 }
             }
+            // iOS 26 on iPhone: the search field sits at the bottom, above the tab bar (and the
+            // keyboard while typing).
+            IvSearchField(
+                query = search.query,
+                onQueryChange = { search.query = it },
+                placeholder = stringResource(FeaturesR.string.search_your_buildings_rooms_and_equipment),
+                clearLabel = stringResource(R.string.app_clear_search),
+                cancelLabel = stringResource(FeaturesR.string.cancel),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .imePadding()
+                    .padding(start = 16.dp, end = 16.dp, bottom = bottomInset + 8.dp),
+            )
         }
     }
 }
+
+/** The bottom search field's height with its spacing: content above it stops there. */
+private val SEARCH_FIELD_HEIGHT = 64.dp
 
 @Composable
 private fun SearchResultsContent(search: SearchTabModel, navController: NavHostController) {
@@ -237,11 +236,14 @@ class SearchTabModel : ViewModel() {
         if (this.dependencies == null) this.dependencies = dependencies
     }
 
-    /** Runs the search for [query] after [DEBOUNCE_MS]; a new keystroke cancels it (the caller's effect restarts). */
-    suspend fun run() {
+    /**
+     * Runs the search for [query] after [DEBOUNCE_MS]; a new keystroke cancels it (the caller's
+     * effect restarts). Signed out, nothing is sent and the last results go.
+     */
+    suspend fun run(signedIn: Boolean) {
         val dependencies = dependencies ?: return
         val query = query.trim()
-        if (query.isEmpty()) {
+        if (!signedIn || query.isEmpty()) {
             results = null
             return
         }

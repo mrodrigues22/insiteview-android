@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,15 @@ enum class GlassMaterial(internal val opacity: Float, internal val blur: Dp) {
     Regular(0.85f, 30.dp),
 }
 
+/**
+ * The space the floating tab bar takes at the bottom (with the navigation bar under it): content
+ * scrolls under the bar, so lists add this to their bottom padding to let the last row clear it.
+ */
+val LocalBottomBarInset = compositionLocalOf { 0.dp }
+
+/** Counts taps on the tab that's already selected: tab roots scroll back to the top (iOS). */
+val LocalTabReselects = compositionLocalOf { 0 }
+
 /** The blur source for glass on this screen, when its content is Compose (null: tinted glass). */
 val LocalGlassState = staticCompositionLocalOf<HazeState?> { null }
 
@@ -75,7 +85,7 @@ fun Modifier.glass(
 ): Modifier {
     val state = LocalGlassState.current
     val surface = Palette.surface
-    val rim = if (Palette.isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.7f)
+    val rim = if (LocalIvColors.current.isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.7f)
     val base = (if (shadow) this.shadow(10.dp, shape, ambientColor = Color.Black.copy(alpha = 0.12f), spotColor = Color.Black.copy(alpha = 0.12f)) else this)
         .clip(shape)
     val filled = if (state != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
