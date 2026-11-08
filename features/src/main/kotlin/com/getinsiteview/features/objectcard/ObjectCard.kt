@@ -50,6 +50,7 @@ import com.getinsiteview.api.buildings.DocumentItem
 import com.getinsiteview.core.CatalogColor
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.features.documents.DocumentFailureDialog
@@ -193,7 +194,7 @@ fun ObjectCardView(model: ObjectCardModel, actions: ObjectCardActions = ObjectCa
                 Column(Modifier.padding(top = 8.dp)) { ColorDot(model.colorKey, 12) }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(model.title, style = IvType.body(22.sp, FontWeight.Bold), color = Palette.ink)
-                    model.systemLine?.let { Text(it, style = IvType.body(15.sp), color = Palette.muted) }
+                    model.systemLine?.let { Text(it, style = IvType.subheadline, color = Palette.muted) }
                 }
             }
         }
@@ -291,7 +292,7 @@ fun ObjectCardView(model: ObjectCardModel, actions: ObjectCardActions = ObjectCa
                 RowIcon(Icons.Outlined.Route, tint = Palette.muted)
                 Column {
                     Text(stringResource(R.string.follow_circuit), style = IvType.body(), color = Palette.ink)
-                    Text(stringResource(R.string.coming_soon), style = IvType.body(12.sp), color = Palette.muted)
+                    Text(stringResource(R.string.coming_soon), style = IvType.caption, color = Palette.muted)
                 }
             }
         }
@@ -313,7 +314,7 @@ fun ObjectCardView(model: ObjectCardModel, actions: ObjectCardActions = ObjectCa
                 technical.globalID?.let { globalID ->
                     item {
                         LabeledRow(stringResource(R.string.globalid)) {
-                            SelectionContainer { Text(globalID, style = IvType.mono(12.sp), color = Palette.muted) }
+                            SelectionContainer { Text(globalID, style = IvType.system(SystemStyle.Footnote, monospaced = true), color = Palette.muted) }
                         }
                     }
                 }

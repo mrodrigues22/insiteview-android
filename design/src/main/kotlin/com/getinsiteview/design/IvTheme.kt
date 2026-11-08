@@ -49,14 +49,17 @@ fun IvTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () 
         displaySmall = IvType.display(24.sp),
         headlineLarge = IvType.display(34.sp),
         headlineMedium = IvType.display(28.sp),
-        headlineSmall = IvType.display(22.sp),
+        // Stock chrome is SF on iOS: alert titles (17 semibold) and messages (13), menu items and
+        // alert buttons (17). M3 dialogs use headlineSmall / bodyMedium, menus and text buttons
+        // labelLarge.
+        headlineSmall = IvType.system(SystemStyle.Headline),
         titleLarge = IvType.body(20.sp, FontWeight.SemiBold),
         titleMedium = IvType.headline,
         titleSmall = IvType.body(15.sp, FontWeight.SemiBold),
         bodyLarge = IvType.body(17.sp),
-        bodyMedium = IvType.body(15.sp),
+        bodyMedium = IvType.system(SystemStyle.Footnote),
         bodySmall = IvType.body(13.sp),
-        labelLarge = IvType.body(15.sp, FontWeight.Medium),
+        labelLarge = IvType.system(SystemStyle.Body),
         labelMedium = IvType.body(13.sp, FontWeight.Medium),
         labelSmall = IvType.mono(11.sp, FontWeight.Medium),
     )

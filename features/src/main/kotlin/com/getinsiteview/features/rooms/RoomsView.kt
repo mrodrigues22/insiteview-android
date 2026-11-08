@@ -27,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.ProfessionalNeed
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
@@ -158,7 +157,7 @@ private fun androidx.compose.foundation.layout.RowScope.RoomRow(session: Buildin
             } else {
                 stringResource(R.string.nothing_to_show_here)
             },
-            style = IvType.body(13.sp),
+            style = IvType.footnote,
             color = Palette.muted,
         )
     }

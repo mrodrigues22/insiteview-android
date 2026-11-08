@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.CatalogColor
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.LoadingBar
@@ -168,7 +167,7 @@ private fun LazyListScope.content(session: BuildingSession, navigator: BuildingN
                     // iOS `Spacer()`: "Couldn't load" sits at the trailing edge.
                     Text(session.systemName(system.key), style = IvType.body(), color = Palette.ink, modifier = Modifier.weight(1f))
                     if (system.key in session.failedSystems) {
-                        Text(stringResource(R.string.couldn_t_load), style = IvType.body(13.sp), color = Palette.warn)
+                        Text(stringResource(R.string.couldn_t_load), style = IvType.footnote, color = Palette.warn)
                     }
                 }
             }
@@ -216,7 +215,7 @@ private fun LazyListScope.content(session: BuildingSession, navigator: BuildingN
                             color = Palette.ink,
                         )
                         session.storeyName(room.storeyID)?.let { level ->
-                            Text(level, style = IvType.body(13.sp), color = Palette.muted)
+                            Text(level, style = IvType.footnote, color = Palette.muted)
                         }
                     }
                 }
@@ -310,7 +309,7 @@ private fun LazyListScope.searchResults(
                     RowIcon(Icons.Outlined.MeetingRoom)
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(row.title, style = IvType.body(), color = Palette.ink)
-                        row.place?.let { Text(it, style = IvType.body(13.sp), color = Palette.muted) }
+                        row.place?.let { Text(it, style = IvType.footnote, color = Palette.muted) }
                     }
                 } else {
                     val system = row.system
@@ -340,6 +339,6 @@ fun RowScope.ElementRow(title: String, color: CatalogColor, place: String?) {
     ColorDot(color, 10)
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(title, style = IvType.body(), color = Palette.ink)
-        if (place != null) Text(place, style = IvType.body(13.sp), color = Palette.muted)
+        if (place != null) Text(place, style = IvType.footnote, color = Palette.muted)
     }
 }

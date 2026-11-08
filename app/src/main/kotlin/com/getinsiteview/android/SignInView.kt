@@ -387,7 +387,7 @@ private enum class EmailMode { SIGN_IN, REGISTER }
 @Composable
 private fun FieldErrors(error: SignInError?, field: String) {
     for (message in error?.messages(field).orEmpty()) {
-        Text(message, style = IvType.body(13.sp), color = Palette.warn)
+        Text(message, style = IvType.footnote, color = Palette.warn)
     }
 }
 
@@ -415,7 +415,7 @@ fun SignInErrorText(error: SignInError, modifier: Modifier = Modifier) {
     }
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
         Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = Palette.warn, modifier = Modifier.size(16.dp).padding(top = 1.dp))
-        Text(text, style = IvType.body(13.sp), color = Palette.warn)
+        Text(text, style = IvType.footnote, color = Palette.warn)
     }
 }
 
@@ -426,16 +426,16 @@ fun TermsNotice(links: WebLinks, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             stringResource(FeaturesR.string.by_continuing_you_agree_to_insite_view_s_terms_and_privacy_p),
-            style = IvType.body(13.sp),
+            style = IvType.footnote,
             color = Palette.muted,
             textAlign = TextAlign.Center,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             TextButton(onClick = { WebPages.open(context, links.terms) }) {
-                Text(stringResource(FeaturesR.string.terms), style = IvType.body(13.sp), color = Palette.accent)
+                Text(stringResource(FeaturesR.string.terms), style = IvType.footnote, color = Palette.accent)
             }
             TextButton(onClick = { WebPages.open(context, links.privacy) }) {
-                Text(stringResource(FeaturesR.string.privacy), style = IvType.body(13.sp), color = Palette.accent)
+                Text(stringResource(FeaturesR.string.privacy), style = IvType.footnote, color = Palette.accent)
             }
         }
     }

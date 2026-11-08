@@ -50,6 +50,7 @@ import com.getinsiteview.core.UnitSystem
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.account.SignInReason
 import com.getinsiteview.features.app.AppDependencies
 import com.getinsiteview.features.ui.IvTopBar
@@ -229,7 +230,7 @@ private fun ProfileContent(dependencies: AppDependencies, me: Me) {
             Text(stringResource(FeaturesR.string.units), style = IvType.body(), color = Palette.ink)
             Spacer(Modifier.weight(1f))
             Box {
-                Text(unitName(units), style = IvType.body(), color = Palette.accent)
+                Text(unitName(units), style = IvType.system(SystemStyle.Body), color = Palette.accent)
                 DropdownMenu(expanded = unitsMenu, onDismissRequest = { unitsMenu = false }) {
                     for (option in listOf(UnitSystem.METRIC, UnitSystem.IMPERIAL)) {
                         DropdownMenuItem(

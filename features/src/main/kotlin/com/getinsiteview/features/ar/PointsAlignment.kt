@@ -50,12 +50,12 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.ar.ARAlignmentView
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.modelkit.Manifest
@@ -428,7 +428,7 @@ fun PointsCrosshair(state: CrosshairState, capturing: Boolean = false) {
         // The label: its top 64 dp below the reticle's top (the reticle's top is 18 dp above centre).
         Text(
             stringResource(label),
-            style = IvType.body(12.sp, FontWeight.SemiBold),
+            style = IvType.system(SystemStyle.Caption, FontWeight.SemiBold),
             color = Palette.ink,
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -461,7 +461,7 @@ fun FindingFloorRow(state: CrosshairState) {
                     R.string.finding_your_place_move_the_phone_slowly_around_the_room
                 },
             ),
-            style = IvType.body(16.sp),
+            style = IvType.callout,
             color = Palette.ink,
         )
     }
@@ -513,7 +513,7 @@ private fun RoomPicker(alignment: PointsAlignment, cancel: () -> Unit) {
 internal fun TextLink(text: String, onClick: () -> Unit, enabled: Boolean = true) {
     Text(
         text,
-        style = IvType.body(14.sp, FontWeight.SemiBold),
+        style = IvType.system(SystemStyle.Footnote, FontWeight.SemiBold),
         color = if (enabled) Palette.accent else Palette.muted,
         modifier = Modifier
             .heightIn(min = 32.dp)
@@ -537,7 +537,7 @@ private fun RoomLine(alignment: PointsAlignment) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Outlined.MeetingRoom, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(18.dp))
-                Text(alignment.roomName, style = IvType.body(15.sp, FontWeight.SemiBold), color = Palette.accent)
+                Text(alignment.roomName, style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold), color = Palette.accent)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 for (room in PointsAlignment.rooms(alignment.session)) {
@@ -560,7 +560,7 @@ private fun RoomLine(alignment: PointsAlignment) {
         }
         Text(
             counter,
-            style = IvType.mono(14.sp),
+            style = IvType.system(SystemStyle.Subheadline, monospacedDigits = true),
             color = Palette.muted,
             modifier = Modifier.combinedClickable(onClick = {}, onLongClick = { alignment.copyDetails() }),
         )
@@ -582,7 +582,7 @@ private fun Marking(alignment: PointsAlignment, cancel: () -> Unit) {
         RoomLine(alignment)
         // Nothing can be marked until the floor is found and tracking is normal.
         if (alignment.crosshair.canAim || alignment.capturing) {
-            Text(instructionString(alignment), style = IvType.body(16.sp), color = Palette.ink)
+            Text(instructionString(alignment), style = IvType.callout, color = Palette.ink)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryActionButton(
                     text = stringResource(R.string.undo),
@@ -681,24 +681,24 @@ private fun FitSummary(alignment: PointsAlignment, fit: ReferenceFit) {
                 fit.matches.size,
                 units.distance(fit.rms),
             ),
-            style = IvType.body(15.sp),
+            style = IvType.subheadline,
             color = Palette.ink,
         )
         when (fit.quality) {
             ReferenceFit.Quality.GOOD -> Unit
             ReferenceFit.Quality.FAIR -> Text(
                 stringResource(R.string.fair_fit_check_that_the_model_lines_up_before_relying_on_it),
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.warn,
             )
             ReferenceFit.Quality.APPROXIMATE -> Text(
                 stringResource(R.string.approximate_fit_it_may_be_off_by_about_x_check_that_the_mode, units.distance(fit.rms)),
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.warn,
             )
         }
         if (fit.dropped != null) {
-            Text(stringResource(R.string.one_corner_was_left_out_it_didn_t_match_the_project), style = IvType.body(13.sp), color = Palette.muted)
+            Text(stringResource(R.string.one_corner_was_left_out_it_didn_t_match_the_project), style = IvType.footnote, color = Palette.muted)
         }
     }
 }

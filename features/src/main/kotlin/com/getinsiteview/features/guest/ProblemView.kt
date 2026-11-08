@@ -32,12 +32,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.api.GuestProblem
 import com.getinsiteview.core.PlayStoreLink
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import java.net.URI
 
@@ -88,13 +88,13 @@ fun ProblemView(problem: GuestProblem, modifier: Modifier = Modifier, retry: (()
         Icon(problem.icon, contentDescription = null, tint = Palette.muted, modifier = Modifier.size(48.dp))
         Text(
             stringResource(problem.titleRes),
-            style = IvType.body(22.sp, androidx.compose.ui.text.font.FontWeight.Bold),
+            style = IvType.system(SystemStyle.Title2, androidx.compose.ui.text.font.FontWeight.Bold),
             color = Palette.ink,
             textAlign = TextAlign.Center,
         )
         Text(
             stringResource(problem.messageRes),
-            style = IvType.body(15.sp),
+            style = IvType.system(SystemStyle.Body),
             color = Palette.muted,
             textAlign = TextAlign.Center,
         )

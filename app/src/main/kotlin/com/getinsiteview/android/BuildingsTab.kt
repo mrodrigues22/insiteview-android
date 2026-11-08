@@ -300,7 +300,7 @@ private fun BuildingRow(
                 Icon(if (isFavorite) Icons.Outlined.StarBorder else Icons.Filled.Star, contentDescription = null, tint = Palette.onAccent)
                 Text(
                     stringResource(if (isFavorite) FeaturesR.string.unfavorite else FeaturesR.string.favorite),
-                    style = IvType.body(15.sp),
+                    style = IvType.subheadline,
                     color = Palette.onAccent,
                 )
             }
@@ -327,7 +327,7 @@ private fun BuildingRowContent(building: MyBuilding, statusLine: BuildingStatusL
             }
         }
         subtitle(building)?.let {
-            Text(it, style = IvType.body(15.sp), color = Palette.muted)
+            Text(it, style = IvType.subheadline, color = Palette.muted)
         }
         if (statusLine != null) StatusLineView(line = statusLine)
     }

@@ -61,6 +61,7 @@ import com.getinsiteview.design.LoadingBar
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.account.SignInPrompt
 import com.getinsiteview.features.account.SignInReason
@@ -257,14 +258,14 @@ private fun BuilderLine(building: PublicBuilding, locale: Locale) {
         date != null -> stringResource(R.string.verified_x, date)
         else -> return
     }
-    Text(text, style = IvType.body(15.sp), color = Palette.muted)
+    Text(text, style = IvType.subheadline, color = Palette.muted)
 }
 
 @Composable
 private fun IconLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: androidx.compose.ui.graphics.Color) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-        Text(text, style = IvType.body(13.sp), color = color)
+        Text(text, style = IvType.footnote, color = color)
     }
 }
 
@@ -279,11 +280,11 @@ private fun PinBanner(enterPin: () -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 stringResource(R.string.pipes_and_wiring_are_hidden_until_the_building_s_pin_is_ente),
-                style = IvType.body(15.sp),
+                style = IvType.subheadline,
                 color = Palette.ink,
             )
             TextButton(onClick = enterPin, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text(stringResource(R.string.enter_pin), style = IvType.body(15.sp, FontWeight.SemiBold), color = Palette.accent)
+                Text(stringResource(R.string.enter_pin), style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold), color = Palette.accent)
             }
         }
     }
@@ -300,7 +301,7 @@ private fun Actions(session: BuildingSession, onAR: () -> Unit, onExplore: () ->
             // Plate invocation (A-04): AR opens on "Point at the plate you scanned".
             Text(
                 stringResource(R.string.point_your_camera_at_plate_n_to_line_the_model_up_with_your, plate),
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.muted,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -364,11 +365,11 @@ fun SaveBuildingSection(session: BuildingSession, prompt: SignInPrompt) {
         if (state == BuildingSession.SaveState.SAVED) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Palette.accent, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.saved_to_your_buildings), style = IvType.body(15.sp, FontWeight.Medium), color = Palette.accent)
+                Text(stringResource(R.string.saved_to_your_buildings), style = IvType.system(SystemStyle.Subheadline, FontWeight.Medium), color = Palette.accent)
             }
         } else {
             Text(stringResource(R.string.keep_this_building), style = IvType.headline, color = Palette.ink)
-            Text(stringResource(R.string.save_it_to_a_free_account_on_any_phone), style = IvType.body(15.sp), color = Palette.muted)
+            Text(stringResource(R.string.save_it_to_a_free_account_on_any_phone), style = IvType.subheadline, color = Palette.muted)
             if (state == BuildingSession.SaveState.SAVING) {
                 Box(Modifier.fillMaxWidth().height(46.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Palette.accent, strokeWidth = 2.dp)
@@ -379,7 +380,7 @@ fun SaveBuildingSection(session: BuildingSession, prompt: SignInPrompt) {
                 })
             }
             if (state == BuildingSession.SaveState.FAILED) {
-                Text(stringResource(R.string.couldn_t_save_the_building_try_again), style = IvType.body(13.sp), color = Palette.warn)
+                Text(stringResource(R.string.couldn_t_save_the_building_try_again), style = IvType.footnote, color = Palette.warn)
             }
         }
     }

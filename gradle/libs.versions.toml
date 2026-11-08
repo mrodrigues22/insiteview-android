@@ -20,6 +20,7 @@ camerax = "1.5.1"
 mlkitBarcode = "17.3.0"
 installReferrer = "2.2"
 kotlinMath = "1.8.0"
+haze = "1.7.3"
 
 [libraries]
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -57,6 +58,8 @@ sceneview = { module = "io.github.sceneview:sceneview", version.ref = "sceneview
 arsceneview = { module = "io.github.sceneview:arsceneview", version.ref = "sceneview" }
 arcore = { module = "com.google.ar:core", version.ref = "arcore" }
 kotlin-math = { module = "dev.romainguy:kotlin-math", version.ref = "kotlinMath" }
+# Liquid Glass: blurs the Compose content behind floating bars (Maven Central).
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
 camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }

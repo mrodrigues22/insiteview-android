@@ -32,13 +32,13 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.api.ApiError
 import com.getinsiteview.api.BuildingPlate
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.modelkit.Manifest
@@ -287,7 +287,7 @@ fun PlateRegistrationPanel(
                     Icon(Icons.Filled.Verified, contentDescription = null, tint = Palette.accent)
                     Text(
                         stringResource(R.string.position_saved_guests_now_align_on_plate_x, flow.plateTitle),
-                        style = IvType.body(15.sp, FontWeight.SemiBold),
+                        style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold),
                         color = Palette.ink,
                     )
                 }
@@ -305,7 +305,7 @@ fun PlateRegistrationPanel(
                             PlateRegistrationFlow.Problem.COULD_NOT_LOAD -> R.string.couldn_t_load_the_plates_check_your_connection
                         },
                     ),
-                    style = IvType.body(15.sp),
+                    style = IvType.subheadline,
                     color = Palette.ink,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -362,11 +362,11 @@ private fun PlateList(flow: PlateRegistrationFlow, plates: List<BuildingPlate>, 
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text(stringResource(R.string.plate_n, plate.number), style = IvType.body(15.sp, FontWeight.SemiBold), color = Palette.ink)
-                    if (plate.label.isNotEmpty()) Text(plate.label, style = IvType.body(13.sp), color = Palette.ink)
+                    Text(stringResource(R.string.plate_n, plate.number), style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold), color = Palette.ink)
+                    if (plate.label.isNotEmpty()) Text(plate.label, style = IvType.footnote, color = Palette.ink)
                     Text(
                         stringResource(if (plate.placed) R.string.has_a_position_registering_replaces_it else R.string.not_in_the_model_yet),
-                        style = IvType.body(12.sp),
+                        style = IvType.caption,
                         color = Palette.muted,
                     )
                 }
@@ -384,7 +384,7 @@ private fun ChecklistRow(done: Boolean, label: @Composable () -> String) {
             contentDescription = null,
             tint = if (done) Palette.accent else Palette.muted,
         )
-        Text(label(), style = IvType.body(15.sp), color = Palette.ink)
+        Text(label(), style = IvType.subheadline, color = Palette.ink)
     }
 }
 
@@ -400,7 +400,7 @@ private fun Review(
     Text(stringResource(R.string.plate_x, flow.plateTitle), style = IvType.headline, color = Palette.ink)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         pose.heightAboveFloor?.let { height ->
-            Text(stringResource(R.string.centre_x_above_the_floor, units.distance(height)), style = IvType.body(15.sp), color = Palette.ink)
+            Text(stringResource(R.string.centre_x_above_the_floor, units.distance(height)), style = IvType.subheadline, color = Palette.ink)
         }
         pose.wall?.let { wall ->
             Text(
@@ -409,17 +409,17 @@ private fun Review(
                     units.distance(wall.fromLeftCorner),
                     units.distance(wall.fromRightCorner),
                 ),
-                style = IvType.body(15.sp),
+                style = IvType.subheadline,
                 color = Palette.ink,
             )
         }
         flow.fit?.let { fit ->
             if (fit.quality == ReferenceFit.Quality.GOOD) {
-                Text(stringResource(R.string.alignment_good_average_error_x, units.distance(fit.rms)), style = IvType.body(15.sp), color = Palette.ink)
+                Text(stringResource(R.string.alignment_good_average_error_x, units.distance(fit.rms)), style = IvType.subheadline, color = Palette.ink)
             } else {
                 Text(
                     stringResource(R.string.alignment_fair_average_error_x_marking_more_points_helps, units.distance(fit.rms)),
-                    style = IvType.body(15.sp),
+                    style = IvType.subheadline,
                     color = Palette.warn,
                 )
             }
@@ -428,7 +428,7 @@ private fun Review(
     if (flow.saveFailed) {
         Text(
             stringResource(R.string.couldn_t_save_the_position_check_your_connection_and_try_aga),
-            style = IvType.body(13.sp),
+            style = IvType.footnote,
             color = Palette.warn,
         )
     }

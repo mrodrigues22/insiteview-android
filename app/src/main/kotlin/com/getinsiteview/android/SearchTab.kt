@@ -39,7 +39,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -200,7 +199,7 @@ private fun HitRow(hit: SearchHit, room: String?, code: BuildingCode?, onOpen: (
 private fun TwoLineLabel(title: String, subtitle: String?, muted: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(title, style = IvType.body(), color = if (muted) Palette.muted else Palette.ink)
-        if (subtitle != null) Text(subtitle, style = IvType.body(13.sp), color = Palette.muted)
+        if (subtitle != null) Text(subtitle, style = IvType.footnote, color = Palette.muted)
     }
 }
 

@@ -23,9 +23,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 
 // iOS `ContentUnavailableView` in Compose: the centred "nothing here" view of the tabs and the
 // scanner. List sections and rows are :features' (`com.getinsiteview.features.ui`).
@@ -54,9 +54,9 @@ fun ContentUnavailable(
                 CompositionLocalProvider(LocalContentColor provides Palette.muted) { icon() }
                 Spacer(Modifier.size(4.dp))
             }
-            Text(title, style = IvType.body(22.sp, FontWeight.Bold), color = Palette.ink, textAlign = TextAlign.Center)
+            Text(title, style = IvType.system(SystemStyle.Title2, FontWeight.Bold), color = Palette.ink, textAlign = TextAlign.Center)
             if (description != null) {
-                Text(description, style = IvType.body(15.sp), color = Palette.muted, textAlign = TextAlign.Center)
+                Text(description, style = IvType.system(SystemStyle.Body), color = Palette.muted, textAlign = TextAlign.Center)
             }
             if (actions != null) {
                 Spacer(Modifier.size(8.dp))

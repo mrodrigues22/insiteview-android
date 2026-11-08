@@ -60,6 +60,7 @@ import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.ar.ARExperienceRules
 import kotlinx.coroutines.launch
@@ -163,7 +164,7 @@ private fun ExplainerPage(frame: ARExplainerFrame, isCurrent: Boolean, reduceMot
         Text(titleText.uppercase(), style = IvType.display(34.sp), color = Palette.ink, textAlign = TextAlign.Center)
         Text(
             messageText,
-            style = IvType.body(17.sp),
+            style = IvType.system(SystemStyle.Body),
             color = Palette.muted,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp),

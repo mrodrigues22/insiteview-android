@@ -30,14 +30,68 @@ object IvFonts {
     )
 }
 
-/** Text styles (iOS `Font.ivDisplay`, `.ivBody`, `.ivHeadline`, `.ivMono`). */
-object IvType {
-    /** Anton, for headlines. Upper-case the text (or use [DisplayText]). */
-    fun display(size: TextUnit = 34.sp) = TextStyle(fontFamily = IvFonts.display, fontSize = size, lineHeight = size * 1.1)
+/**
+ * The iOS text styles at the default Dynamic Type size ("Large"): size and leading in points. iOS
+ * draws them in the system font (SF Pro); Android uses its own ([FontFamily.Default], Roboto), as
+ * each platform's "system font" (P1-13).
+ */
+enum class SystemStyle(val size: TextUnit, val lineHeight: TextUnit) {
+    LargeTitle(34.sp, 41.sp),
+    Title(28.sp, 34.sp),
+    Title2(22.sp, 28.sp),
+    Title3(20.sp, 25.sp),
+    Headline(17.sp, 22.sp),
+    Body(17.sp, 22.sp),
+    Callout(16.sp, 21.sp),
+    Subheadline(15.sp, 20.sp),
+    Footnote(13.sp, 18.sp),
+    Caption(12.sp, 16.sp),
+    Caption2(11.sp, 13.sp),
+}
 
-    /** Barlow, for body text and controls: regular, medium, semibold or bold. */
+/** Text styles (iOS `Font.ivDisplay`, `.ivBody`, `.ivHeadline`, `.ivMono`, and the system styles). */
+object IvType {
+    /**
+     * Anton, for headlines. Upper-case the text (or use [DisplayText]). Line height is the font's own
+     * (ascent + descent ≈ 1.505 em), as iOS lays it out.
+     */
+    fun display(size: TextUnit = 34.sp) = TextStyle(fontFamily = IvFonts.display, fontSize = size, lineHeight = size * 1.505)
+
+    /** Barlow, for body text and controls: regular, medium, semibold or bold. Line height 1.2 em (the font's). */
     fun body(size: TextUnit = 17.sp, weight: FontWeight = FontWeight.Normal) =
-        TextStyle(fontFamily = IvFonts.body, fontWeight = bodyWeight(weight), fontSize = size, lineHeight = size * 1.3)
+        TextStyle(fontFamily = IvFonts.body, fontWeight = bodyWeight(weight), fontSize = size, lineHeight = size * 1.2)
+
+    /**
+     * An iOS system text style (`.font(.footnote)`, `.subheadline.weight(.semibold)`, …) in the
+     * platform font. [monospaced] is `.monospaced()`, [monospacedDigits] `.monospacedDigit()`.
+     */
+    fun system(
+        style: SystemStyle,
+        weight: FontWeight = if (style == SystemStyle.Headline) FontWeight.SemiBold else FontWeight.Normal,
+        monospaced: Boolean = false,
+        monospacedDigits: Boolean = false,
+    ) = TextStyle(
+        fontFamily = if (monospaced) FontFamily.Monospace else FontFamily.Default,
+        fontWeight = weight,
+        fontSize = style.size,
+        lineHeight = style.lineHeight,
+        fontFeatureSettings = if (monospacedDigits) "tnum" else null,
+    )
+
+    /** `.footnote`: captions under rows, hints, small print. */
+    val footnote: TextStyle get() = system(SystemStyle.Footnote)
+
+    /** `.subheadline`. */
+    val subheadline: TextStyle get() = system(SystemStyle.Subheadline)
+
+    /** `.callout`. */
+    val callout: TextStyle get() = system(SystemStyle.Callout)
+
+    /** `.caption`. */
+    val caption: TextStyle get() = system(SystemStyle.Caption)
+
+    /** `.caption2`. */
+    val caption2: TextStyle get() = system(SystemStyle.Caption2)
 
     /** Barlow semibold 17: section titles, card titles, names. */
     val headline: TextStyle get() = body(17.sp, FontWeight.SemiBold)
@@ -47,7 +101,7 @@ object IvType {
         fontFamily = IvFonts.mono,
         fontWeight = if (weight <= FontWeight.Normal) FontWeight.Normal else FontWeight.Medium,
         fontSize = size,
-        lineHeight = size * 1.35,
+        lineHeight = size * 1.32,
     )
 
     /** An eyebrow: JetBrains Mono 11 medium, uppercase (by the caller), tracked. */

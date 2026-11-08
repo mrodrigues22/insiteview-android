@@ -29,10 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.DeepLink
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.ui.IvTopBar
 import com.getinsiteview.features.ui.LabeledRow
@@ -112,7 +112,7 @@ fun DiagnosticsView(model: DiagnosticsModel, onBack: (() -> Unit)? = null) {
                 item { SectionHeader(stringResource(R.string.invocation)) }
                 item {
                     ListRow {
-                        SelectionContainer { Text(url.toString(), style = IvType.mono(12.sp), color = Palette.ink) }
+                        SelectionContainer { Text(url.toString(), style = IvType.system(SystemStyle.Footnote, monospaced = true), color = Palette.ink) }
                     }
                 }
                 item { ListRow { Text(deepLinkText(model.deepLink), style = IvType.body(), color = Palette.ink) } }
@@ -124,7 +124,7 @@ fun DiagnosticsView(model: DiagnosticsModel, onBack: (() -> Unit)? = null) {
 @Composable
 private fun MonoRow(key: String, value: String) {
     LabeledRow(key) {
-        SelectionContainer { Text(value, style = IvType.body(15.sp), color = Palette.muted) }
+        SelectionContainer { Text(value, style = IvType.body(), color = Palette.muted) }
     }
 }
 

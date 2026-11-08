@@ -51,13 +51,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.getinsiteview.ar.ARAlignmentScene
 import com.getinsiteview.ar.ARAlignmentView
+import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.ar.IntHolder
 import com.getinsiteview.features.ar.PointsCrosshair
 import com.getinsiteview.modelkit.ar.CrosshairState
@@ -300,7 +300,7 @@ private fun MarkingTestContent(onClose: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Text(
                     "Tracking: ${model.tracking.swiftName}",
-                    fontSize = 12.sp,
+                    style = IvType.caption,
                     color = Palette.ink,
                     modifier = Modifier.background(Palette.surface.copy(alpha = 0.85f), RoundedCornerShape(50)).padding(8.dp),
                 )
@@ -349,13 +349,13 @@ private fun Panel(model: MarkingTestModel) {
                     onClick = { model.target = target },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = targets.size),
                 ) {
-                    Text(target.shortName, fontSize = 12.sp)
+                    Text(target.shortName, style = IvType.footnote)
                 }
             }
         }
         Text(
             model.target.instruction + " Point the phone down with the circle on the corner, and tap Mark.",
-            fontSize = 13.sp,
+            style = IvType.footnote,
             color = Palette.ink,
         )
         Column(Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -380,7 +380,7 @@ private fun Panel(model: MarkingTestModel) {
 
 @Composable
 private fun MonoLine(text: String) {
-    Text(text, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Palette.ink)
+    Text(text, style = IvType.system(SystemStyle.Caption, monospaced = true), color = Palette.ink)
 }
 
 private fun line(row: MarkingTestModel.Row): String {

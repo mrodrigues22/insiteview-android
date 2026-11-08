@@ -34,7 +34,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.CatalogColor
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
@@ -75,7 +74,7 @@ fun IvTopBar(
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text.uppercase(),
-        style = IvType.eyebrow,
+        style = IvType.footnote,
         color = Palette.muted,
         modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
     )
@@ -86,7 +85,7 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
 fun SectionFooter(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
-        style = IvType.body(13.sp),
+        style = IvType.footnote,
         color = Palette.muted,
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
     )

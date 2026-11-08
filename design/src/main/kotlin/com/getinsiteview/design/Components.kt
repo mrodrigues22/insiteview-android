@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +54,7 @@ fun PrimaryActionButton(
     modifier: Modifier = Modifier,
     variant: PrimaryActionVariant = PrimaryActionVariant.Accent,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -69,6 +72,7 @@ fun PrimaryActionButton(
     }
     ActionLabel(
         text = text,
+        icon = icon,
         foreground = foreground,
         modifier = modifier
             .alpha(if (enabled) 1f else 0.4f)
@@ -84,12 +88,14 @@ fun SecondaryActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val color = if (pressed) Palette.accent else Palette.ink
     ActionLabel(
         text = text,
+        icon = icon,
         foreground = color,
         modifier = modifier
             .alpha(if (enabled) 1f else 0.4f)
@@ -99,12 +105,15 @@ fun SecondaryActionButton(
     )
 }
 
+/** iOS `Label(title, systemImage:)` in an action button: the icon before the uppercase title. */
 @Composable
-private fun ActionLabel(text: String, foreground: Color, modifier: Modifier) {
-    Box(
+private fun ActionLabel(text: String, icon: ImageVector?, foreground: Color, modifier: Modifier) {
+    Row(
         modifier = modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (icon != null) Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(18.dp))
         Text(
             text.uppercase(),
             style = IvType.body(13.sp, FontWeight.SemiBold).copy(letterSpacing = 0.06.em),
@@ -130,13 +139,18 @@ fun Chip(
     val fill = if (isSelected) Palette.ink else Palette.surface
     val border = if (isSelected) Palette.ink else Palette.line
     val surface = Palette.surface
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     Row(
         modifier = modifier
-            .alpha(if (enabled) 1f else 0.4f)
+            .alpha(if (!enabled) 0.4f else if (pressed) PRESSED_ALPHA else 1f)
             .heightIn(min = 36.dp)
             .background(fill, RectangleShape)
             .border(1.dp, border, RectangleShape)
-            .selectable(selected = isSelected, enabled = enabled, role = Role.Checkbox, onClick = onClick)
+            .selectable(
+                selected = isSelected, enabled = enabled, role = Role.Checkbox,
+                interactionSource = interaction, indication = null, onClick = onClick,
+            )
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -155,6 +169,31 @@ fun Chip(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/** SwiftUI's plain button style dims its label while pressed (no ripple). */
+internal const val PRESSED_ALPHA = 0.6f
+
+/**
+ * A chip that opens something ("What do you need?", iOS `NeedLabel` in a `NavigationLink`): no dot,
+ * 14 dp padding, announced as a button.
+ */
+@Composable
+fun LinkChip(title: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    Box(
+        modifier = modifier
+            .alpha(if (pressed) PRESSED_ALPHA else 1f)
+            .heightIn(min = 36.dp)
+            .background(Palette.surface, RectangleShape)
+            .border(1.dp, Palette.line, RectangleShape)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(title, style = IvType.body(15.sp, FontWeight.Medium), color = Palette.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

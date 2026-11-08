@@ -162,7 +162,7 @@ fun PinEntryView(session: BuildingSession, onDismiss: () -> Unit) {
                 DisplayText(stringResource(R.string.enter_the_building_s_pin), size = 26.sp)
                 Text(
                     stringResource(R.string.the_builder_or_owner_can_give_it_to_you_pipes_and_wiring_sho),
-                    style = IvType.body(15.sp),
+                    style = IvType.subheadline,
                     color = Palette.muted,
                     textAlign = TextAlign.Center,
                 )
@@ -219,14 +219,14 @@ private fun PinStatus(model: PinEntryModel) {
                 } else {
                     stringResource(R.string.wrong_pin_try_again)
                 }
-                Text(text, color = warn, style = IvType.body(16.sp), textAlign = TextAlign.Center)
+                Text(text, color = warn, style = IvType.callout, textAlign = TextAlign.Center)
             }
             is PinPad.Status.Locked -> {
                 val seconds = model.pad.secondsUntilUnlock(now)
                 if (seconds != null) {
                     Text(
                         stringResource(R.string.too_many_wrong_pins_try_again_in_x, formatLockout(seconds, locale)),
-                        color = warn, style = IvType.body(16.sp), textAlign = TextAlign.Center,
+                        color = warn, style = IvType.callout, textAlign = TextAlign.Center,
                     )
                 } else {
                     Text(" ")
@@ -238,7 +238,7 @@ private fun PinStatus(model: PinEntryModel) {
                 } else {
                     stringResource(R.string.something_went_wrong_try_again)
                 },
-                color = warn, style = IvType.body(16.sp), textAlign = TextAlign.Center,
+                color = warn, style = IvType.callout, textAlign = TextAlign.Center,
             )
         }
     }

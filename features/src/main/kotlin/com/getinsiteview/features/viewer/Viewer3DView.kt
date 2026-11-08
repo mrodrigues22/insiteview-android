@@ -43,13 +43,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.ProfessionalNeed
 import com.getinsiteview.design.Chip
 import com.getinsiteview.design.ChipRow
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.LoadingBar
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.design.toColor
 import com.getinsiteview.features.R
 import com.getinsiteview.features.app.BuildingNavigator
@@ -208,7 +208,7 @@ fun RoomFocusChip(name: String?, clear: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Outlined.MeetingRoom, contentDescription = null, tint = Palette.ink, modifier = Modifier.size(18.dp))
-        Text(name ?: stringResource(R.string.room), style = IvType.body(15.sp, FontWeight.Medium), color = Palette.ink)
+        Text(name ?: stringResource(R.string.room), style = IvType.system(SystemStyle.Subheadline, FontWeight.Medium), color = Palette.ink)
         Icon(Icons.Filled.Cancel, contentDescription = null, tint = Palette.muted, modifier = Modifier.size(18.dp))
     }
 }

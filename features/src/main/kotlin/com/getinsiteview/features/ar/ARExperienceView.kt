@@ -96,7 +96,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
@@ -112,6 +111,7 @@ import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.building.BuildingSession
 import com.getinsiteview.features.objectcard.ObjectCardContext
@@ -890,7 +890,7 @@ private fun TopBar(model: ARExperienceModel, onClose: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Text(
             statusTagText(model),
-            style = IvType.body(13.sp, FontWeight.Medium),
+            style = IvType.system(SystemStyle.Footnote, FontWeight.Medium),
             color = Palette.ink,
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -1089,7 +1089,7 @@ private fun StandardPanel(model: ARExperienceModel) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(coachingText(coaching), style = IvType.body(16.sp, FontWeight.Medium), color = Palette.ink, textAlign = TextAlign.Center)
+                Text(coachingText(coaching), style = IvType.system(SystemStyle.Callout, FontWeight.Medium), color = Palette.ink, textAlign = TextAlign.Center)
                 CoachingActions(model)
             }
         }
@@ -1171,7 +1171,7 @@ private fun UnplacedPlateCard(model: ARExperienceModel, number: Int) {
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(stringResource(R.string.plate_n_isn_t_in_the_model_yet, number), style = IvType.body(16.sp, FontWeight.Medium), color = Palette.ink)
+        Text(stringResource(R.string.plate_n_isn_t_in_the_model_yet, number), style = IvType.system(SystemStyle.Callout, FontWeight.Medium), color = Palette.ink)
         PrimaryActionButton(stringResource(R.string.register_its_position), onClick = { model.startRegistration(plateNumber = number) })
     }
 }
@@ -1197,7 +1197,7 @@ private fun FixHereCard(model: ARExperienceModel, fix: ARExperienceModel.FixHere
                         }
                     },
                 ),
-                style = IvType.body(16.sp),
+                style = IvType.callout,
                 color = Palette.ink,
             )
             // Two fixes in a row, 2.5–6 m apart, also correct the turn (`PlateAnchoring.TURN_WINDOW`);
@@ -1210,7 +1210,7 @@ private fun FixHereCard(model: ARExperienceModel, fix: ARExperienceModel.FixHere
                         R.string.fix_a_second_corner_of_this_room_right_after_to_straighten_t
                     },
                 ),
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.muted,
             )
         } else {
@@ -1248,19 +1248,19 @@ private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomS
         when (status) {
             ARExperienceModel.RoomSave.Status.SAVED -> Text(
                 stringResource(R.string.saved_everyone_will_see_this_room_where_it_really_is),
-                style = IvType.body(16.sp, FontWeight.Medium),
+                style = IvType.system(SystemStyle.Callout, FontWeight.Medium),
                 color = Palette.ink,
             )
             ARExperienceModel.RoomSave.Status.FORBIDDEN -> Text(
                 stringResource(R.string.only_admins_can_save_room_adjustments),
-                style = IvType.body(16.sp),
+                style = IvType.callout,
                 color = Palette.ink,
             )
             else -> {
                 Text(stringResource(R.string.save_where_x_really_is, name), style = IvType.headline, color = Palette.ink)
                 Text(
                     stringResource(R.string.everyone_who_opens_this_building_in_ar_will_start_with_this),
-                    style = IvType.body(16.sp),
+                    style = IvType.callout,
                     color = Palette.ink,
                 )
                 Text(
@@ -1269,7 +1269,7 @@ private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomS
                         ARExperienceRules.saveLength(shift, locale),
                         ARExperienceRules.saveAngle(turn, locale),
                     ),
-                    style = IvType.body(13.sp),
+                    style = IvType.footnote,
                     color = Palette.ink,
                 )
                 val base = model.roomName(observation.baseSpaceID)
@@ -1280,27 +1280,27 @@ private fun RoomSaveCard(model: ARExperienceModel, save: ARExperienceModel.RoomS
                     } else {
                         stringResource(R.string.measured_from_a_plate_x_away, distance)
                     },
-                    style = IvType.body(13.sp),
+                    style = IvType.footnote,
                     color = Palette.muted,
                 )
                 if (observation.baseDistance > ARExperienceRules.FAR_BASE_DISTANCE) {
                     Text(
                         stringResource(R.string.far_from_where_you_aligned_the_phone_may_have_lost_precision),
-                        style = IvType.body(13.sp),
+                        style = IvType.footnote,
                         color = Palette.warn,
                     )
                 }
                 if (observation.turn == null) {
                     Text(
                         stringResource(R.string.to_include_its_turn_fix_a_second_corner_of_this_room_right_a),
-                        style = IvType.body(13.sp),
+                        style = IvType.footnote,
                         color = Palette.muted,
                     )
                 }
                 if (status == ARExperienceModel.RoomSave.Status.FAILED) {
                     Text(
                         stringResource(R.string.couldn_t_save_check_your_connection_and_try_again),
-                        style = IvType.body(13.sp),
+                        style = IvType.footnote,
                         color = Palette.accent,
                     )
                 }
@@ -1345,7 +1345,7 @@ private fun LocateChip(model: ARExperienceModel) {
     ) {
         Icon(Icons.Outlined.GpsFixed, contentDescription = null, tint = Palette.accent)
         Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(session.index[id]?.let { session.displayName(it) } ?: "", style = IvType.body(15.sp, FontWeight.SemiBold), color = Palette.ink)
+            Text(session.index[id]?.let { session.displayName(it) } ?: "", style = IvType.system(SystemStyle.Subheadline, FontWeight.SemiBold), color = Palette.ink)
             val indicator = model.locateIndicator
             Text(
                 when {
@@ -1353,7 +1353,7 @@ private fun LocateChip(model: ARExperienceModel) {
                     indicator.isOnScreen -> stringResource(R.string.x_away, session.units.distance(indicator.distance))
                     else -> stringResource(R.string.x_away_follow_the_arrow, session.units.distance(indicator.distance))
                 },
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.muted,
             )
         }
@@ -1409,7 +1409,7 @@ private fun FineTunePad(model: ARExperienceModel) {
     ) {
         Text(
             stringResource(R.string.each_tap_moves_x_or_turns_x, units.nudge(ManualAlignment.NUDGE_DISTANCE), units.angle(0.5)),
-            style = IvType.body(12.sp),
+            style = IvType.caption,
             color = Palette.muted,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1485,7 +1485,7 @@ private fun SafetyNoteCard(modifier: Modifier = Modifier, dismiss: () -> Unit) {
             Icon(Icons.Filled.Warning, contentDescription = null, tint = Palette.warn)
             Text(stringResource(R.string.before_you_drill_or_cut), style = IvType.headline, color = Palette.ink)
         }
-        Text(stringResource(R.string.the_model_shows_the_design_always_confirm_before_drilling_or), style = IvType.body(17.sp), color = Palette.ink)
+        Text(stringResource(R.string.the_model_shows_the_design_always_confirm_before_drilling_or), style = IvType.system(SystemStyle.Body), color = Palette.ink)
         PrimaryActionButton(stringResource(R.string.got_it), onClick = dismiss)
     }
 }
@@ -1506,6 +1506,6 @@ private fun FloorCoachingCard(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CircularProgressIndicator(Modifier.size(20.dp), color = Palette.muted, strokeWidth = 2.dp)
-        Text(stringResource(R.string.move_the_phone_slowly_over_the_floor), style = IvType.body(15.sp, FontWeight.Medium), color = Palette.ink)
+        Text(stringResource(R.string.move_the_phone_slowly_over_the_floor), style = IvType.system(SystemStyle.Subheadline, FontWeight.Medium), color = Palette.ink)
     }
 }

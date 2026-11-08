@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.getinsiteview.core.BuildingStatusLine
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
@@ -36,7 +35,7 @@ fun StatusLineView(line: BuildingStatusLine, modifier: Modifier = Modifier) {
     val color = if (line.isAttention) Palette.warn else Palette.muted
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(line.icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-        Text(statusLineText(line), style = IvType.body(15.sp), color = color)
+        Text(statusLineText(line), style = IvType.subheadline, color = color)
     }
 }
 

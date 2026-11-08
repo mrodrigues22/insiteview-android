@@ -43,7 +43,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -53,6 +52,7 @@ import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
 import com.getinsiteview.design.PrimaryActionButton
 import com.getinsiteview.design.SecondaryActionButton
+import com.getinsiteview.design.SystemStyle
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -122,7 +122,7 @@ fun ScannerView(
                         if (foreign) FeaturesR.string.this_isn_t_an_insite_view_code else FeaturesR.string.point_the_camera_at_the_insite_view_code,
                     ),
                     modifier = Modifier.background(Palette.surface.copy(alpha = 0.85f)).padding(12.dp),
-                    style = IvType.body(16.sp, FontWeight.Medium),
+                    style = IvType.system(SystemStyle.Callout, FontWeight.Medium),
                     color = Palette.ink,
                 )
             }

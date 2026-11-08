@@ -45,13 +45,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.getinsiteview.api.DocumentKind
 import com.getinsiteview.api.GuestProblem
 import com.getinsiteview.api.buildings.DocumentItem
 import com.getinsiteview.design.IvType
 import com.getinsiteview.design.Palette
+import com.getinsiteview.design.SystemStyle
 import com.getinsiteview.features.R
 import com.getinsiteview.features.app.BuildingNavigator
 import com.getinsiteview.features.building.BuildingSession
@@ -171,7 +171,7 @@ fun DocumentRow(
             val kind = documentKindTitle(item.kind)
             Text(
                 if (elementName != null) "$kind · $elementName" else kind,
-                style = IvType.body(13.sp),
+                style = IvType.footnote,
                 color = Palette.muted,
             )
         }
@@ -272,13 +272,13 @@ private fun EmptyDocuments() {
         Icon(Icons.Outlined.Description, contentDescription = null, tint = Palette.muted, modifier = Modifier.size(48.dp))
         Text(
             stringResource(R.string.no_documents_yet),
-            style = IvType.body(22.sp, FontWeight.Bold),
+            style = IvType.system(SystemStyle.Title2, FontWeight.Bold),
             color = Palette.ink,
             textAlign = TextAlign.Center,
         )
         Text(
             stringResource(R.string.manuals_warranties_and_certificates_the_builder_shares_appea),
-            style = IvType.body(15.sp),
+            style = IvType.system(SystemStyle.Body),
             color = Palette.muted,
             textAlign = TextAlign.Center,
         )
